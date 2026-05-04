@@ -7,7 +7,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
   <meta name="apple-mobile-web-app-title" content="DXF Cotizador">
-  <link rel="apple-touch-icon" href="icon-192.png">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#111111">
   <style>
@@ -297,15 +297,35 @@
     .pres-firma-label { font-size: 9px; color: #999; text-align: center; text-transform: uppercase; letter-spacing: .06em; }
     .pres-footer-info { font-size: 9px; color: #bbb; text-align: right; line-height: 1.6; }
     .pres-ops { font-size: 10px; color: #777; margin-top: 2px; line-height: 1.4; }
-    @media (max-width: 600px) {
-      .sidebar { width: 56px; }
-      .nav-btn span:not(.nav-icon) { display: none; }
+    @media (max-width: 700px) {
+      .layout { flex-direction: column; }
+      .sidebar {
+        width: 100%;
+        flex-direction: row;
+        overflow-x: auto;
+        padding: 0;
+        height: 54px;
+        flex-shrink: 0;
+      }
+      .nav-btn {
+        flex-direction: column;
+        gap: 2px;
+        padding: 6px 10px;
+        font-size: 10px;
+        min-width: 64px;
+        flex-shrink: 0;
+      }
+      .nav-btn span:not(.nav-icon) { display: block; font-size: 10px; }
+      .nav-icon { font-size: 18px; }
+      .nav-sep { display: none; }
       .content { padding: 12px; }
       .g2, .g3 { grid-template-columns: 1fr; }
       .rent-grid { grid-template-columns: 1fr 1fr; }
       .metrics { grid-template-columns: 1fr 1fr; }
       .ops-grid { grid-template-columns: 1fr; }
       .rc-grid { grid-template-columns: 1fr; }
+      .topbar { padding: 8px 14px; }
+      .topbar-sub { display: none; }
     }
   </style>
 </head>

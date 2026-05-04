@@ -1,6 +1,6 @@
 {
   "name": "DXF Cotizador",
-  "short_name": "DXF",
+  "short_name": "DXFCotizador",
   "description": "Calculadora de cotización DXFMotorsport",
   "start_url": "./index.html",
   "display": "standalone",
@@ -16,6 +16,11 @@
     {
       "src": "icon-512.png",
       "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "apple-touch-icon.png",
+      "sizes": "180x180",
       "type": "image/png"
     }
   ]
