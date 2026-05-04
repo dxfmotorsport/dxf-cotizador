@@ -1,0 +1,836 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DXF Cotizador</title>
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-title" content="DXF Cotizador">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#111111">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #f5f5f5;
+      --card-bg: #ffffff;
+      --text: #1a1a1a;
+      --text2: #666;
+      --border: rgba(0,0,0,0.12);
+      --border2: rgba(0,0,0,0.22);
+      --accent: #185FA5;
+      --accent-dark: #0C447C;
+      --green: #27500A;
+      --green-bg: #EAF3DE;
+      --amber: #633806;
+      --amber-bg: #FAEEDA;
+      --amber-border: #BA7517;
+      --red: #791F1F;
+      --red-bg: #FCEBEB;
+      --red-border: #A32D2D;
+      --radius: 8px;
+      --radius-lg: 12px;
+    }
+    body {
+      -webkit-text-size-adjust: 100%;
+      -webkit-tap-highlight-color: transparent;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-size: 14px;
+      background: var(--bg);
+      color: var(--text);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    /* TOPBAR */
+    .topbar {
+      background: #111;
+      padding: 10px 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-shrink: 0;
+      -webkit-app-region: drag;
+    }
+    .topbar img { width: 32px; height: 32px; object-fit: contain; filter: invert(1); }
+    .topbar-title { color: #fff; font-size: 14px; font-weight: 600; letter-spacing: .04em; }
+    .topbar-sub { color: #aaa; font-size: 11px; margin-left: auto; }
+
+    /* LAYOUT */
+    .layout { display: flex; flex: 1; overflow: hidden; }
+    .sidebar {
+      width: 200px;
+      background: #1a1a1a;
+      display: flex;
+      flex-direction: column;
+      padding: 12px 0;
+      flex-shrink: 0;
+    }
+    .nav-btn {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 18px;
+      color: #aaa;
+      font-size: 13px;
+      cursor: pointer;
+      border: none;
+      background: transparent;
+      text-align: left;
+      width: 100%;
+      transition: background .15s, color .15s;
+    }
+    .nav-btn:hover { background: #2a2a2a; color: #fff; }
+    .nav-btn.active { background: #185FA5; color: #fff; }
+    .nav-icon { font-size: 16px; width: 20px; text-align: center; }
+    .nav-sep { height: 1px; background: #333; margin: 8px 12px; }
+
+    /* CONTENT */
+    .content { flex: 1; overflow-y: auto; padding: 20px; }
+    .panel { display: none; }
+    .panel.active { display: block; }
+
+    /* CARDS */
+    .card {
+      background: var(--card-bg);
+      border: 0.5px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 16px 20px;
+      margin-bottom: 14px;
+    }
+    .card-title {
+      font-size: 10px; font-weight: 600;
+      color: var(--text2);
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      margin-bottom: 12px;
+    }
+
+    /* GRID */
+    .g2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .g3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+    .g4 { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; }
+
+    /* FIELDS */
+    .field { display: flex; flex-direction: column; gap: 4px; }
+    .field label { font-size: 11px; color: var(--text2); }
+    .field input, .field select, .field textarea {
+      padding: 7px 10px;
+      font-size: 13px;
+      border: 0.5px solid var(--border2);
+      border-radius: var(--radius);
+      background: #fff;
+      color: var(--text);
+      font-family: inherit;
+      outline: none;
+      transition: border-color .15s;
+    }
+    .field input:focus, .field select:focus, .field textarea:focus {
+      border-color: var(--accent);
+    }
+    .field textarea { resize: vertical; min-height: 64px; line-height: 1.5; }
+    .field .note { font-size: 10px; color: #aaa; }
+
+    /* FROW */
+    .frow {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 6px 0;
+      border-bottom: 0.5px solid var(--border);
+      font-size: 13px;
+    }
+    .frow:last-child { border-bottom: none; }
+    .frow span:first-child { color: var(--text2); }
+    .frow span:last-child { font-weight: 500; }
+
+    /* MÉTRICAS */
+    .metrics { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-top: 12px; }
+    .metric { background: #f8f8f8; border-radius: var(--radius); padding: 12px; }
+    .ml { font-size: 10px; color: var(--text2); margin-bottom: 4px; }
+    .mv { font-size: 20px; font-weight: 600; }
+    .mv.blue { color: var(--accent); }
+    .mv.green { color: var(--green); }
+    .mv.amber { color: var(--amber); }
+
+    /* OPERACIONES */
+    .ops-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .op-row {
+      display: flex; align-items: center; gap: 8px;
+      padding: 8px 12px;
+      border: 0.5px solid var(--border);
+      border-radius: var(--radius);
+      background: #fafafa;
+    }
+    .op-row label { font-size: 12px; flex: 1; cursor: pointer; }
+    .op-row input[type=checkbox] { width: 15px; height: 15px; cursor: pointer; accent-color: var(--accent); }
+    .op-row input[type=number] {
+      width: 55px; padding: 4px 6px; font-size: 12px;
+      border: 0.5px solid var(--border2);
+      border-radius: 6px; background: #fff; color: var(--text);
+    }
+    .op-unit { font-size: 10px; color: var(--text2); }
+
+    /* RECARGOS */
+    .rc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .rc-card {
+      padding: 12px 14px;
+      border: 0.5px solid var(--border);
+      border-radius: var(--radius);
+      background: #fafafa;
+      cursor: pointer;
+      transition: background .15s, border-color .15s;
+    }
+    .rc-card.act-urg { border-color: var(--amber-border); background: var(--amber-bg); }
+    .rc-card.act-fh { border-color: var(--red-border); background: var(--red-bg); }
+    .rc-card .rch { display: flex; align-items: center; gap: 8px; margin-bottom: 3px; }
+    .rc-card .rcl { font-size: 13px; font-weight: 600; }
+    .rc-card .rcd { font-size: 11px; color: var(--text2); }
+    .rc-card .rcp { font-size: 18px; font-weight: 700; margin-top: 6px; }
+    .rcp.warn { color: var(--amber); }
+    .rcp.danger { color: var(--red); }
+
+    /* TABLA DESCUENTOS */
+    .dto-tabla { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 8px; }
+    .dto-tabla th { font-size: 10px; font-weight: 600; color: var(--text2); text-align: left; padding: 5px 8px; border-bottom: 0.5px solid var(--border); }
+    .dto-tabla td { padding: 6px 8px; border-bottom: 0.5px solid var(--border); }
+    .dto-tabla tr.act td { background: var(--green-bg); color: var(--green); font-weight: 600; }
+    .dto-tabla tr:last-child td { border-bottom: none; }
+
+    /* ALERTAS */
+    .av {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 8px 14px; border-radius: var(--radius); margin-bottom: 8px;
+    }
+    .av.warn { background: var(--amber-bg); }
+    .av.danger { background: var(--red-bg); }
+    .av.success { background: var(--green-bg); }
+    .av .al { font-size: 12px; }
+    .av .aval { font-size: 14px; font-weight: 600; }
+    .av.warn .al, .av.warn .aval { color: var(--amber); }
+    .av.danger .al, .av.danger .aval { color: var(--red); }
+    .av.success .al, .av.success .aval { color: var(--green); }
+
+    /* DESGLOSE */
+    .drow { display: flex; justify-content: space-between; font-size: 13px; padding: 4px 0; color: var(--text2); }
+    .drow.tot { font-weight: 600; color: var(--text); border-top: 0.5px solid var(--border); margin-top: 8px; padding-top: 8px; font-size: 15px; }
+    .drow.tot-iva { font-weight: 600; color: var(--accent); font-size: 14px; border-top: 0.5px solid var(--border); margin-top: 4px; padding-top: 4px; }
+    .drow.min { color: var(--amber); font-weight: 500; }
+    .drow.dto { color: var(--green); font-weight: 500; }
+    .drow.rw { color: var(--amber); font-weight: 500; }
+    .drow.rd { color: var(--red); font-weight: 500; }
+
+    /* BOTONES */
+    .btn {
+      padding: 9px 16px; font-size: 12px; font-weight: 600;
+      cursor: pointer; border-radius: var(--radius);
+      border: 0.5px solid var(--border2);
+      background: transparent; color: var(--text);
+      transition: background .15s;
+    }
+    .btn:hover { background: #f0f0f0; }
+    .btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .btn.primary:hover { background: var(--accent-dark); }
+    .btn.sm { padding: 6px 12px; font-size: 11px; }
+    .btn.danger { background: var(--red-bg); color: var(--red); border-color: var(--red-border); }
+    .btn-row { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+
+    /* RENTABILIDAD */
+    .rent-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; margin-bottom: 12px; }
+    .rent-card { background: #f8f8f8; border-radius: var(--radius); padding: 12px; }
+    .rent-card .rl { font-size: 10px; color: var(--text2); margin-bottom: 4px; }
+    .gauge-row { display: flex; align-items: center; gap: 12px; margin: 8px 0; }
+    .gauge-track { flex: 1; height: 8px; background: #e8e8e8; border-radius: 4px; overflow: hidden; }
+    .gauge-fill { height: 100%; border-radius: 4px; transition: width .4s; background: var(--accent); }
+    .gauge-label { font-size: 11px; color: var(--text2); min-width: 90px; text-align: right; }
+    .sep { height: 0.5px; background: var(--border); margin: 12px 0; }
+
+    /* HISTORIAL */
+    .hist-item { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 0.5px solid var(--border); }
+    .hist-item:last-child { border-bottom: none; }
+    .hist-num { font-size: 10px; color: var(--text2); min-width: 50px; font-weight: 600; }
+    .hist-desc { flex: 1; }
+    .hist-desc .hd { font-size: 13px; font-weight: 500; }
+    .hist-desc .hm { font-size: 11px; color: var(--text2); margin-top: 2px; }
+    .hist-precio { font-size: 15px; font-weight: 700; color: var(--accent); min-width: 70px; text-align: right; }
+    .hbadge { display: inline-block; font-size: 9px; padding: 2px 6px; border-radius: 99px; margin-left: 5px; }
+    .hbadge.urg { background: var(--amber-bg); color: var(--amber); }
+    .hbadge.fh { background: var(--red-bg); color: var(--red); }
+    .hbadge.serie { background: var(--green-bg); color: var(--green); }
+    .empty { font-size: 12px; color: var(--text2); padding: 2rem 0; text-align: center; }
+
+    /* PRESUPUESTO PREVIEW */
+    .pres-preview {
+      background: #fff;
+      border: 0.5px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 20px;
+      font-family: Arial, sans-serif;
+      font-size: 12px;
+    }
+    .pres-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; padding-bottom: 16px; border-bottom: 2px solid #111; }
+    .pres-brand { display: flex; align-items: center; gap: 12px; }
+    .pres-brand img { width: 60px; height: 60px; object-fit: contain; }
+    .pres-brand-name { font-size: 17px; font-weight: 700; color: #111; }
+    .pres-brand-sub { font-size: 10px; color: #666; line-height: 1.6; }
+    .pres-num { font-size: 18px; font-weight: 700; text-align: right; }
+    .pres-badge { display: inline-block; background: #111; color: #fff; font-size: 9px; font-weight: 700; padding: 3px 10px; border-radius: 2px; margin-top: 6px; letter-spacing: .1em; text-transform: uppercase; }
+    .pres-section-title { font-size: 9px; font-weight: 700; color: #999; text-transform: uppercase; letter-spacing: .1em; margin: 14px 0 6px; border-bottom: 1px solid #eee; padding-bottom: 4px; }
+    .pres-cli { background: #f8f8f8; padding: 10px 12px; border-left: 3px solid #111; }
+    .pres-cli-name { font-weight: 700; font-size: 13px; }
+    .pres-tabla { width: 100%; border-collapse: collapse; font-size: 11px; }
+    .pres-tabla th { background: #111; color: #fff; padding: 7px 10px; text-align: left; font-size: 9px; text-transform: uppercase; letter-spacing: .06em; }
+    .pres-tabla th.r { text-align: right; }
+    .pres-tabla td { padding: 8px 10px; border-bottom: 1px solid #ebebeb; }
+    .pres-tabla td.r { text-align: right; font-weight: 500; }
+    .pres-tabla tr:nth-child(even) td { background: #fafafa; }
+    .pres-totales { width: 100%; margin-top: 8px; border-collapse: collapse; font-size: 12px; }
+    .pres-totales td { padding: 4px 10px; color: #666; }
+    .pres-totales td.r { text-align: right; min-width: 80px; }
+    .pres-totales tr.fin { background: #111; }
+    .pres-totales tr.fin td { color: #fff!important; font-weight: 700; font-size: 14px; padding: 9px 10px; }
+    .pres-anticipo { display: flex; gap: 8px; margin-top: 10px; }
+    .pres-anti { flex: 1; border: 1px solid #e0e0e0; border-radius: 3px; padding: 8px 10px; text-align: center; }
+    .pres-anti .al { font-size: 9px; color: #999; text-transform: uppercase; margin-bottom: 3px; }
+    .pres-anti .av { font-size: 15px; font-weight: 700; color: #111; }
+    .pres-anti .as { font-size: 9px; color: #aaa; }
+    .pres-cond { background: #f8f8f8; padding: 10px 12px; font-size: 10px; color: #666; line-height: 1.7; border-radius: 2px; margin-top: 10px; }
+    .pres-footer { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 20px; padding-top: 14px; border-top: 1px solid #ddd; }
+    .pres-firma-line { width: 130px; height: 1px; background: #bbb; margin: 36px auto 5px; }
+    .pres-firma-label { font-size: 9px; color: #999; text-align: center; text-transform: uppercase; letter-spacing: .06em; }
+    .pres-footer-info { font-size: 9px; color: #bbb; text-align: right; line-height: 1.6; }
+    .pres-ops { font-size: 10px; color: #777; margin-top: 2px; line-height: 1.4; }
+    @media (max-width: 600px) {
+      .sidebar { width: 56px; }
+      .nav-btn span:not(.nav-icon) { display: none; }
+      .content { padding: 12px; }
+      .g2, .g3 { grid-template-columns: 1fr; }
+      .rent-grid { grid-template-columns: 1fr 1fr; }
+      .metrics { grid-template-columns: 1fr 1fr; }
+      .ops-grid { grid-template-columns: 1fr; }
+      .rc-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="topbar">
+  <img id="toplogo" src="" alt="DXF">
+  <span class="topbar-title">DXF Cotizador</span>
+  <span class="topbar-sub">dxfmotorsport.com</span>
+</div>
+
+<div class="layout">
+  <div class="sidebar">
+    <button class="nav-btn active" onclick="switchTab('costes')"><span class="nav-icon">⚙</span> Coste/hora</button>
+    <button class="nav-btn" onclick="switchTab('cliente')"><span class="nav-icon">👤</span> Cliente</button>
+    <button class="nav-btn" onclick="switchTab('trabajo')"><span class="nav-icon">🔧</span> Trabajo</button>
+    <button class="nav-btn" onclick="switchTab('resultado')"><span class="nav-icon">📊</span> Resultado</button>
+    <div class="nav-sep"></div>
+    <button class="nav-btn" onclick="switchTab('rentabilidad')"><span class="nav-icon">📈</span> Rentabilidad</button>
+    <button class="nav-btn" onclick="switchTab('historial')"><span class="nav-icon">🗂</span> Historial</button>
+    <button class="nav-btn" onclick="switchTab('presupuesto')"><span class="nav-icon">📄</span> Presupuesto</button>
+  </div>
+
+  <div class="content">
+
+    <!-- COSTES -->
+    <div id="tab-costes" class="panel active">
+      <div class="card">
+        <div class="card-title">Gastos fijos mensuales — post-financiación</div>
+        <div class="frow"><span>Amortización torno (4.000€ / 96 meses)</span><span>42 €</span></div>
+        <div class="frow"><span>Electricidad (~1,5kW × 80h × 0,18€)</span><span>22 €</span></div>
+        <div class="frow"><span>Mantenimiento</span><span>30 €</span></div>
+        <div class="frow"><span>Herramientas / insertos</span><span>30 €</span></div>
+        <div class="frow"><span>Refrigerante / lubricante</span><span>15 €</span></div>
+        <div class="frow" style="margin-top:6px;padding-top:10px;border-top:0.5px solid var(--border2);border-bottom:none">
+          <span style="font-weight:600;color:var(--text)">Total fijos/mes</span>
+          <span style="color:var(--accent);font-weight:700">139 €/mes</span>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Mano de obra y margen</div>
+        <div class="g2">
+          <div class="field"><label>Tu tarifa horaria (€/h)</label><input type="number" id="mano" value="15" min="0" oninput="calc()"><div class="note">15€/h → ~1.200€/mes a 80h</div></div>
+          <div class="field"><label>Margen beneficio (%)</label><input type="number" id="margen" value="35" min="0" max="300" oninput="calc()"></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Mínimo de taller (sin IVA)</div>
+        <div class="g2">
+          <div class="field"><label>Mínimo sin material (€)</label><input type="number" id="minimo" value="20" min="0" step="1" oninput="calc()"></div>
+          <div class="field"><label>Mínimo con material (€)</label><input type="number" id="minimo_mat" value="25" min="0" step="1" oninput="calc()"></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Descuento por serie</div>
+        <table class="dto-tabla">
+          <tr><th>Cantidad</th><th>Descuento</th><th>Motivo</th></tr>
+          <tr id="dtr1"><td>1–4 uds</td><td>Sin descuento</td><td>Precio base</td></tr>
+          <tr id="dtr2"><td>5–9 uds</td><td>–10%</td><td>Setup amortizado</td></tr>
+          <tr id="dtr3"><td>10–19 uds</td><td>–15%</td><td>Serie media</td></tr>
+          <tr id="dtr4"><td>20+ uds</td><td>–20%</td><td>Serie larga</td></tr>
+        </table>
+      </div>
+      <div class="metrics">
+        <div class="metric"><div class="ml">Coste máquina/hora</div><div class="mv" id="out_maq">—</div></div>
+        <div class="metric"><div class="ml">Coste total/hora</div><div class="mv" id="out_total">—</div></div>
+        <div class="metric"><div class="ml">Precio venta/hora</div><div class="mv blue" id="out_pvp">—</div></div>
+      </div>
+    </div>
+
+    <!-- CLIENTE -->
+    <div id="tab-cliente" class="panel">
+      <div class="card">
+        <div class="card-title">Datos del cliente</div>
+        <div class="g2" style="margin-bottom:12px">
+          <div class="field"><label>Nombre / empresa</label><input type="text" id="cli_nombre" placeholder="Ej: Equipo Galicia Rally"></div>
+          <div class="field"><label>Teléfono / email</label><input type="text" id="cli_contacto" placeholder="Ej: 612 345 678"></div>
+        </div>
+        <div class="g2" style="margin-bottom:12px">
+          <div class="field"><label>NIF / CIF (opcional)</label><input type="text" id="cli_nif" placeholder="Ej: 12345678A"></div>
+          <div class="field"><label>Vehículo / competición</label><input type="text" id="cli_vehiculo" placeholder="Ej: Peugeot 208 Rally4"></div>
+        </div>
+        <div class="field"><label>Dirección (opcional)</label><input type="text" id="cli_dir" placeholder="Ej: Calle Mayor 12, Ferrol"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Condiciones del presupuesto</div>
+        <div class="g3">
+          <div class="field"><label>Validez (días)</label><input type="number" id="validez" value="30" min="1" oninput="calc()"></div>
+          <div class="field"><label>Anticipo (%)</label><input type="number" id="anticipo" value="50" min="0" max="100" oninput="calc()"></div>
+          <div class="field"><label>Plazo de entrega</label><input type="text" id="plazo" placeholder="Ej: 5–7 días hábiles"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TRABAJO -->
+    <div id="tab-trabajo" class="panel">
+      <div class="card">
+        <div class="card-title">Material</div>
+        <div class="g3">
+          <div class="field"><label>Tipo de material</label>
+            <select id="mat_tipo" oninput="calc()">
+              <option value="acero">Acero F-114 / F-125</option>
+              <option value="inox">Inoxidable 304/316</option>
+              <option value="aluminio">Aluminio 6061/7075</option>
+              <option value="bronce">Bronce / Latón</option>
+              <option value="titanio">Titanio</option>
+              <option value="otro">Otro / Cliente aporta</option>
+            </select>
+          </div>
+          <div class="field"><label>Coste bruto del material (€)</label><input type="number" id="mat_coste" value="0" min="0" step="0.5" oninput="calc()"></div>
+          <div class="field"><label>Desperdicio (%)</label><input type="number" id="mat_desp" value="20" min="0" max="100" oninput="calc()"><div class="note">Virutas, recortes</div></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Operaciones</div>
+        <div class="ops-grid">
+          <div class="op-row"><input type="checkbox" id="op_setup" checked oninput="calc()"><label for="op_setup">Setup / amarre</label><input type="number" id="t_setup" value="10" min="1" oninput="calc()"><span class="op-unit">min</span></div>
+          <div class="op-row"><input type="checkbox" id="op_cilin" checked oninput="calc()"><label for="op_cilin">Cilindrado / refrentado</label><input type="number" id="t_cilin" value="25" min="1" oninput="calc()"><span class="op-unit">min</span></div>
+          <div class="op-row"><input type="checkbox" id="op_rosca" oninput="calc()"><label for="op_rosca">Roscado (métrico/Whitworth)</label><input type="number" id="t_rosca" value="20" min="1" oninput="calc()"><span class="op-unit">min</span></div>
+          <div class="op-row"><input type="checkbox" id="op_talad" oninput="calc()"><label for="op_talad">Taladrado / mandrinado</label><input type="number" id="t_talad" value="15" min="1" oninput="calc()"><span class="op-unit">min</span></div>
+          <div class="op-row"><input type="checkbox" id="op_pieza" oninput="calc()"><label for="op_pieza">Pieza de revolución (eje/buje)</label><input type="number" id="t_pieza" value="45" min="1" oninput="calc()"><span class="op-unit">min</span></div>
+          <div class="op-row"><input type="checkbox" id="op_acab" oninput="calc()"><label for="op_acab">Acabado / pulido</label><input type="number" id="t_acab" value="15" min="1" oninput="calc()"><span class="op-unit">min</span></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Tipo de trabajo</div>
+        <div class="rc-grid">
+          <div class="rc-card" id="card_urg" onclick="toggleRec('urgente')">
+            <div class="rch"><input type="checkbox" id="rec_urgente"><span class="rcl">Urgente</span></div>
+            <div class="rcd">Mismo día / plazo ajustado</div>
+            <div class="rcp warn">+25%</div>
+          </div>
+          <div class="rc-card" id="card_fh" onclick="toggleRec('fueraho')">
+            <div class="rch"><input type="checkbox" id="rec_fueraho"><span class="rcl">Fuera de horario</span></div>
+            <div class="rcd">Noche, fin de semana, festivo</div>
+            <div class="rcp danger">+50%</div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Pedido</div>
+        <div class="g2" style="margin-bottom:12px">
+          <div class="field"><label>Cantidad de piezas</label><input type="number" id="cant" value="1" min="1" oninput="calc()"></div>
+          <div class="field"><label>Descripción del trabajo</label><input type="text" id="desc" placeholder="Ej: Eje transmisión acero F-114"></div>
+        </div>
+        <div class="field"><label>Notas / condiciones especiales</label><textarea id="notas" placeholder="Ej: Cliente aporta el material. Tolerancia ±0,05mm."></textarea></div>
+      </div>
+    </div>
+
+    <!-- RESULTADO -->
+    <div id="tab-resultado" class="panel">
+      <div class="card">
+        <div class="card-title">Resumen</div>
+        <div id="av_min" class="av warn" style="display:none"><span class="al">Mínimo de taller aplicado</span><span class="aval" id="av_min_v">—</span></div>
+        <div id="av_serie" class="av success" style="display:none"><span class="al" id="av_serie_l">Descuento serie</span><span class="aval" id="av_serie_v">—</span></div>
+        <div id="av_urg" class="av warn" style="display:none"><span class="al">Recargo urgencia +25%</span><span class="aval" id="av_urg_v">—</span></div>
+        <div id="av_fh" class="av danger" style="display:none"><span class="al">Recargo fuera de horario +50%</span><span class="aval" id="av_fh_v">—</span></div>
+        <div class="metrics" style="margin-top:0">
+          <div class="metric"><div class="ml">Tiempo mecanizado</div><div class="mv" id="out_tiempo">—</div></div>
+          <div class="metric"><div class="ml">Precio unitario (s/IVA)</div><div class="mv" id="out_unit">—</div></div>
+          <div class="metric"><div class="ml">Total con IVA</div><div class="mv blue" id="out_pedido_iva">—</div></div>
+        </div>
+        <div style="border-top:0.5px solid var(--border);margin-top:12px;padding-top:12px">
+          <div class="drow"><span>Coste mecanizado</span><span id="d_mec">—</span></div>
+          <div class="drow"><span>Material + desperdicio</span><span id="d_mat">—</span></div>
+          <div class="drow"><span>Subtotal coste</span><span id="d_sub">—</span></div>
+          <div class="drow"><span>Margen (<span id="d_mpct">35</span>%)</span><span id="d_mar">—</span></div>
+          <div class="drow min" id="row_min" style="display:none"><span>Ajuste mínimo</span><span id="d_min_diff">—</span></div>
+          <div class="drow dto" id="row_dto" style="display:none"><span id="row_dto_l">Descuento serie</span><span id="d_dto">—</span></div>
+          <div class="drow rw" id="row_urg" style="display:none"><span>Recargo urgencia (+25%)</span><span id="d_urg">—</span></div>
+          <div class="drow rd" id="row_fh" style="display:none"><span>Recargo fuera horario (+50%)</span><span id="d_fh">—</span></div>
+          <div class="drow tot"><span>Base imponible / ud</span><span id="d_tot">—</span></div>
+          <div class="drow"><span>IVA 21%</span><span id="d_iva">—</span></div>
+          <div class="drow tot-iva"><span>Total / ud con IVA</span><span id="d_tot_iva">—</span></div>
+          <div class="drow" style="font-size:12px;margin-top:4px"><span>Total pedido (<span id="d_cant_label">1</span> ud) con IVA</span><span id="d_pedido_iva" style="font-weight:600;color:var(--text)">—</span></div>
+        </div>
+        <div id="notas_prev" style="display:none;margin-top:12px;padding:8px 12px;background:#f8f8f8;border-radius:var(--radius);font-size:12px;color:var(--text2)"></div>
+        <div id="anticipo_prev" style="display:none;margin-top:8px;padding:8px 12px;background:#E6F1FB;border-radius:var(--radius);font-size:12px;color:#0C447C"></div>
+        <div class="btn-row">
+          <button class="btn primary" onclick="guardarYGenerar()">Guardar y ver presupuesto →</button>
+          <button class="btn" onclick="switchTab('trabajo')">Modificar trabajo</button>
+          <button class="btn" onclick="switchTab('cliente')">Datos cliente</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- RENTABILIDAD -->
+    <div id="tab-rentabilidad" class="panel">
+      <div class="card">
+        <div class="card-title">Panel de rentabilidad mensual</div>
+        <div class="rent-grid">
+          <div class="rent-card"><div class="rl">Horas facturables/mes</div><div class="mv">80h</div></div>
+          <div class="rent-card"><div class="rl">Ingresos si llenas el mes</div><div class="mv blue" id="r_ingresos">—</div></div>
+          <div class="rent-card"><div class="rl">Gastos fijos</div><div class="mv amber" id="r_gastos">139€</div></div>
+          <div class="rent-card"><div class="rl">Beneficio neto potencial</div><div class="mv green" id="r_benef">—</div></div>
+        </div>
+        <div class="sep"></div>
+        <div class="card-title">Punto de equilibrio</div>
+        <p style="font-size:12px;color:var(--text2);margin-bottom:8px">Horas mínimas al mes para cubrir costes fijos</p>
+        <div class="gauge-row">
+          <div class="gauge-track"><div class="gauge-fill" id="g_fill" style="width:0%"></div></div>
+          <div class="gauge-label"><span id="g_label">—</span></div>
+        </div>
+        <div class="sep"></div>
+        <div class="card-title">Simulador de escenarios</div>
+        <div class="g3" style="margin-bottom:12px">
+          <div class="field"><label>Horas trabajadas/mes</label><input type="number" id="sim_horas" value="80" min="1" max="200" oninput="simular()"></div>
+          <div class="field"><label>Trabajos urgentes (%)</label><input type="number" id="sim_urg" value="10" min="0" max="100" oninput="simular()"></div>
+          <div class="field"><label>Trabajos con descuento (%)</label><input type="number" id="sim_dto" value="20" min="0" max="100" oninput="simular()"></div>
+        </div>
+        <div class="rent-grid">
+          <div class="rent-card"><div class="rl">Ingreso estimado/mes</div><div class="mv blue" id="sim_ing">—</div></div>
+          <div class="rent-card"><div class="rl">Sueldo neto estimado</div><div class="mv green" id="sim_sue">—</div></div>
+          <div class="rent-card"><div class="rl">Margen real</div><div class="mv" id="sim_mar">—</div></div>
+          <div class="rent-card"><div class="rl">Horas punto equilibrio</div><div class="mv amber" id="sim_peq">—</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- HISTORIAL -->
+    <div id="tab-historial" class="panel">
+      <div class="card">
+        <div class="card-title">Cotizaciones guardadas esta sesión</div>
+        <div id="hist_lista"><div class="empty">Aún no hay cotizaciones guardadas</div></div>
+        <div class="btn-row"><button class="btn sm danger" onclick="limpiarHist()">Limpiar historial</button></div>
+      </div>
+    </div>
+
+    <!-- PRESUPUESTO -->
+    <div id="tab-presupuesto" class="panel">
+      <div id="pres_empty" class="card" style="text-align:center;padding:3rem">
+        <p style="color:var(--text2);font-size:13px">Todavía no has generado ningún presupuesto.<br>Ve a <b>Resultado</b> y pulsa "Guardar y ver presupuesto".</p>
+      </div>
+      <div id="pres_content" style="display:none">
+        <div class="btn-row" style="margin-bottom:12px">
+          <button class="btn primary" onclick="imprimirPresupuesto()">Imprimir / Guardar PDF</button>
+          <button class="btn" onclick="nuevoPresupuesto()">Nuevo presupuesto</button>
+        </div>
+        <div id="pres_render"></div>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /layout -->
+
+<script>
+const OPS = ['setup','cilin','rosca','talad','pieza','acab'];
+const FIJOS = 139, HORAS_BASE = 80, IVA = 0.21;
+let historial = [], numP = 1;
+const LOGO = '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';
+
+// Inyectar logo
+document.getElementById('toplogo').src = 'data:image/jpeg;base64,' + LOGO;
+
+function switchTab(id) {
+  const tabs = ['costes','cliente','trabajo','resultado','rentabilidad','historial','presupuesto'];
+  document.querySelectorAll('.nav-btn').forEach((b,i) => b.classList.toggle('active', tabs[i] === id));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('tab-'+id).classList.add('active');
+  if (id === 'rentabilidad') simular();
+  if (id === 'historial') renderHist();
+}
+
+function toggleRec(tipo) {
+  const cb = document.getElementById('rec_'+tipo);
+  cb.checked = !cb.checked;
+  if (tipo==='urgente' && cb.checked) document.getElementById('rec_fueraho').checked = false;
+  if (tipo==='fueraho' && cb.checked) document.getElementById('rec_urgente').checked = false;
+  document.getElementById('card_urg').classList.toggle('act-urg', document.getElementById('rec_urgente').checked);
+  document.getElementById('card_fh').classList.toggle('act-fh', document.getElementById('rec_fueraho').checked);
+  calc();
+}
+
+function n(id) { return parseFloat(document.getElementById(id).value) || 0; }
+function ch(id) { return document.getElementById('op_'+id).checked; }
+function rch(id) { return document.getElementById('rec_'+id).checked; }
+function show(id, vis) { document.getElementById(id).style.display = vis ? 'flex' : 'none'; }
+
+function getDto(cant) {
+  if (cant >= 20) return {pct:.20, label:'–20% serie larga (20+ uds)', tr:'dtr4'};
+  if (cant >= 10) return {pct:.15, label:'–15% serie media (10–19 uds)', tr:'dtr3'};
+  if (cant >= 5)  return {pct:.10, label:'–10% serie (5–9 uds)', tr:'dtr2'};
+  return {pct:0, label:'', tr:'dtr1'};
+}
+
+function calcCore() {
+  const coste_maq = FIJOS / HORAS_BASE;
+  const coste_h = coste_maq + n('mano');
+  const margen_pct = n('margen') / 100;
+  const pvp_h = coste_h * (1 + margen_pct);
+  let mins = 0;
+  OPS.forEach(op => { if (ch(op)) mins += n('t_'+op); });
+  const horas = mins / 60;
+  const mat = n('mat_coste') * (1 + n('mat_desp') / 100);
+  const mec = coste_h * horas;
+  const sub = mec + mat;
+  const mar = sub * margen_pct;
+  let base = sub + mar;
+  const min_ap = mat > 0 ? Math.max(n('minimo') + mat, n('minimo_mat')) : n('minimo');
+  const min_act = base < min_ap;
+  let post_min = min_act ? min_ap : base;
+  const cant = Math.max(1, n('cant'));
+  const dto = getDto(cant);
+  const dto_eur = post_min * dto.pct;
+  const post_dto = post_min - dto_eur;
+  const urg = rch('urgente'), fh = rch('fueraho');
+  const rec_pct = fh ? .5 : urg ? .25 : 0;
+  const rec_eur = post_dto * rec_pct;
+  const unit = post_dto + rec_eur;
+  const iva_ud = unit * IVA;
+  const unit_iva = unit + iva_ud;
+  const total = unit * cant;
+  const total_iva = unit_iva * cant;
+  return {coste_maq,coste_h,pvp_h,mins,mat,mec,sub,mar,base,min_act,post_min,min_ap,dto,dto_eur,post_dto,urg,fh,rec_pct,rec_eur,unit,iva_ud,unit_iva,cant,total,total_iva};
+}
+
+function calc() {
+  const r = calcCore();
+  document.getElementById('out_maq').textContent = r.coste_maq.toFixed(2)+'€/h';
+  document.getElementById('out_total').textContent = r.coste_h.toFixed(2)+'€/h';
+  document.getElementById('out_pvp').textContent = r.pvp_h.toFixed(2)+'€/h';
+  document.getElementById('out_tiempo').textContent = r.mins.toFixed(0)+' min';
+  document.getElementById('out_unit').textContent = r.unit.toFixed(2)+'€';
+  document.getElementById('out_pedido_iva').textContent = r.total_iva.toFixed(2)+'€';
+  document.getElementById('d_mec').textContent = r.mec.toFixed(2)+'€';
+  document.getElementById('d_mat').textContent = r.mat.toFixed(2)+'€';
+  document.getElementById('d_sub').textContent = r.sub.toFixed(2)+'€';
+  document.getElementById('d_mpct').textContent = n('margen').toFixed(0);
+  document.getElementById('d_mar').textContent = r.mar.toFixed(2)+'€';
+  document.getElementById('d_tot').textContent = r.unit.toFixed(2)+'€';
+  document.getElementById('d_iva').textContent = r.iva_ud.toFixed(2)+'€';
+  document.getElementById('d_tot_iva').textContent = r.unit_iva.toFixed(2)+'€';
+  document.getElementById('d_cant_label').textContent = r.cant;
+  document.getElementById('d_pedido_iva').textContent = r.total_iva.toFixed(2)+'€';
+
+  show('av_min', r.min_act); show('row_min', r.min_act);
+  if (r.min_act) {
+    document.getElementById('av_min_v').textContent = r.post_min.toFixed(2)+'€';
+    document.getElementById('d_min_diff').textContent = '+'+(r.post_min-r.base).toFixed(2)+'€';
+  }
+  const dto_act = r.dto.pct > 0;
+  show('av_serie', dto_act); show('row_dto', dto_act);
+  if (dto_act) {
+    document.getElementById('av_serie_l').textContent = r.dto.label;
+    document.getElementById('av_serie_v').textContent = '-'+r.dto_eur.toFixed(2)+'€';
+    document.getElementById('row_dto_l').textContent = r.dto.label;
+    document.getElementById('d_dto').textContent = '-'+r.dto_eur.toFixed(2)+'€';
+  }
+  ['dtr1','dtr2','dtr3','dtr4'].forEach(id => document.getElementById(id).classList.remove('act'));
+  document.getElementById(r.dto.tr).classList.add('act');
+  show('av_urg', r.urg); show('row_urg', r.urg);
+  if (r.urg) { document.getElementById('av_urg_v').textContent = '+'+r.rec_eur.toFixed(2)+'€'; document.getElementById('d_urg').textContent = '+'+r.rec_eur.toFixed(2)+'€'; }
+  show('av_fh', r.fh); show('row_fh', r.fh);
+  if (r.fh) { document.getElementById('av_fh_v').textContent = '+'+r.rec_eur.toFixed(2)+'€'; document.getElementById('d_fh').textContent = '+'+r.rec_eur.toFixed(2)+'€'; }
+  document.getElementById('card_urg').classList.toggle('act-urg', r.urg);
+  document.getElementById('card_fh').classList.toggle('act-fh', r.fh);
+
+  const notas = document.getElementById('notas').value.trim();
+  const np = document.getElementById('notas_prev');
+  if (notas) { np.style.display='block'; np.textContent='Notas: '+notas; } else { np.style.display='none'; }
+
+  const ant = n('anticipo');
+  const ap = document.getElementById('anticipo_prev');
+  if (ant > 0 && r.total_iva > 0) {
+    ap.style.display='block';
+    ap.textContent = 'Anticipo ('+ant+'%): '+(r.total_iva*ant/100).toFixed(2)+'€  ·  Resto a la entrega: '+(r.total_iva*(1-ant/100)).toFixed(2)+'€  (con IVA)';
+  } else { ap.style.display='none'; }
+}
+
+function simular() {
+  const pvp_h = calcCore().pvp_h;
+  const h = Math.max(1, parseFloat(document.getElementById('sim_horas').value) || 80);
+  const pct_urg = (parseFloat(document.getElementById('sim_urg').value) || 0) / 100;
+  const pct_dto = (parseFloat(document.getElementById('sim_dto').value) || 0) / 100;
+  const pvp_adj = pvp_h * (1 + pct_urg*0.25 - pct_dto*0.125);
+  const ingresos = pvp_adj * h;
+  const gastos = FIJOS + n('mano') * h;
+  const benef = ingresos - gastos;
+  const peq = Math.ceil(FIJOS / pvp_h);
+  const pct_fill = Math.min(100, (peq / HORAS_BASE) * 100);
+  document.getElementById('r_ingresos').textContent = (calcCore().pvp_h * HORAS_BASE).toFixed(0)+'€';
+  document.getElementById('r_gastos').textContent = FIJOS+'€';
+  document.getElementById('r_benef').textContent = ((calcCore().pvp_h - calcCore().coste_h) * HORAS_BASE).toFixed(0)+'€';
+  document.getElementById('sim_ing').textContent = ingresos.toFixed(0)+'€';
+  document.getElementById('sim_sue').textContent = Math.max(0, benef).toFixed(0)+'€';
+  document.getElementById('sim_mar').textContent = (benef/ingresos*100).toFixed(1)+'%';
+  document.getElementById('sim_peq').textContent = peq+'h';
+  document.getElementById('g_fill').style.width = pct_fill+'%';
+  document.getElementById('g_label').textContent = peq+'h mín / '+HORAS_BASE+'h';
+}
+
+function guardarYGenerar() {
+  const r = calcCore();
+  const desc = document.getElementById('desc').value || 'Sin descripción';
+  const matEl = document.getElementById('mat_tipo');
+  const mat = matEl.options[matEl.selectedIndex].text;
+  const notas = document.getElementById('notas').value.trim();
+  const cli = document.getElementById('cli_nombre').value || 'Cliente';
+  const cli_c = document.getElementById('cli_contacto').value;
+  const cli_nif = document.getElementById('cli_nif').value;
+  const cli_dir = document.getElementById('cli_dir').value;
+  const cli_v = document.getElementById('cli_vehiculo').value;
+  const plazo = document.getElementById('plazo').value || 'A convenir';
+  const validez = n('validez') || 30;
+  const ant = n('anticipo') || 50;
+  const num = 'DXF-'+String(numP).padStart(3,'0');
+  const fecha = new Date().toLocaleDateString('es-ES', {day:'numeric',month:'long',year:'numeric'});
+
+  historial.unshift({num,fecha,desc,mat,cant:r.cant,unit:r.unit.toFixed(2),total:r.total_iva.toFixed(2),cli,urg:r.urg,fh:r.fh,serie:r.dto.pct>0});
+  numP++;
+
+  const opsList = OPS.filter(ch).map(o => {
+    return document.querySelector('label[for=op_'+o+']').textContent + ' ('+n('t_'+o)+' min)';
+  });
+  const opsHtml = opsList.map(o => '· '+o).join('<br>');
+  const totalMins = OPS.filter(ch).reduce((s,o) => s + n('t_'+o), 0);
+
+  const cliLines = [cli];
+  if (cli_nif) cliLines.push('NIF/CIF: '+cli_nif);
+  if (cli_dir) cliLines.push(cli_dir);
+  if (cli_c) cliLines.push(cli_c);
+  if (cli_v) cliLines.push('Vehículo: '+cli_v);
+
+  const extras = r.urg ? ' <span style="color:#BA7517;font-weight:700">— URGENTE +25%</span>' : r.fh ? ' <span style="color:#A32D2D;font-weight:700">— FUERA HORARIO +50%</span>' : '';
+  const dtoRow = r.dto.pct > 0 ? `<tr><td colspan="2" style="color:#27500A">Descuento ${r.dto.label}</td><td class="r" style="color:#27500A">–${r.dto_eur.toFixed(2)} €</td></tr>` : '';
+  const urgRow = r.urg ? `<tr><td colspan="2" style="color:#633806">Recargo urgencia (+25%)</td><td class="r" style="color:#633806">+${r.rec_eur.toFixed(2)} €</td></tr>` : '';
+  const fhRow = r.fh ? `<tr><td colspan="2" style="color:#791F1F">Recargo fuera horario (+50%)</td><td class="r" style="color:#791F1F">+${r.rec_eur.toFixed(2)} €</td></tr>` : '';
+  const notasHtml = notas ? `<div style="margin-top:6px;font-size:10px;color:#666"><b>Notas:</b> ${notas}</div>` : '';
+
+  const html = `
+<div class="pres-preview">
+  <div class="pres-header">
+    <div class="pres-brand">
+      <img src="data:image/jpeg;base64,${LOGO}" alt="DXFMotorsport">
+      <div>
+        <div class="pres-brand-name">DXFMotorsport</div>
+        <div class="pres-brand-sub">dxfmotorsport.com<br>Narón, Galicia · España</div>
+      </div>
+    </div>
+    <div>
+      <div class="pres-num">${num}</div>
+      <div style="font-size:11px;color:#777;margin-top:3px">Fecha: ${fecha}</div>
+      <div style="text-align:right"><span class="pres-badge">Presupuesto</span></div>
+    </div>
+  </div>
+
+  <div class="pres-section-title">Cliente</div>
+  <div class="pres-cli">
+    <div class="pres-cli-name">${cli}</div>
+    ${cliLines.slice(1).map(l=>`<div style="font-size:11px;color:#666">${l}</div>`).join('')}
+  </div>
+
+  <div class="pres-section-title">Detalle del trabajo</div>
+  <table class="pres-tabla">
+    <tr>
+      <th style="width:38%">Descripción</th>
+      <th style="width:18%">Material</th>
+      <th style="width:12%">Tiempo</th>
+      <th class="r" style="width:8%">Uds</th>
+      <th class="r" style="width:12%">Precio/h</th>
+      <th class="r" style="width:12%">Base imp.</th>
+    </tr>
+    <tr>
+      <td>${desc}${extras}<div class="pres-ops">${opsHtml}</div>${notasHtml}</td>
+      <td>${mat}</td>
+      <td>${totalMins} min</td>
+      <td class="r">${r.cant}</td>
+      <td class="r">${r.pvp_h.toFixed(2)} €</td>
+      <td class="r">${r.unit.toFixed(2)} €</td>
+    </tr>
+  </table>
+
+  <table class="pres-totales">
+    <tr><td style="width:55%"></td><td>Base imponible</td><td class="r">${r.total.toFixed(2)} €</td></tr>
+    ${dtoRow}${urgRow}${fhRow}
+    <tr><td></td><td style="font-weight:600">IVA 21%</td><td class="r" style="font-weight:600">${(r.total*IVA).toFixed(2)} €</td></tr>
+    <tr class="fin"><td></td><td>TOTAL CON IVA</td><td class="r">${r.total_iva.toFixed(2)} €</td></tr>
+  </table>
+
+  <div class="pres-section-title" style="margin-top:14px">Forma de pago</div>
+  <div class="pres-anticipo">
+    <div class="pres-anti"><div class="al">Anticipo al confirmar (${ant}%)</div><div class="av">${(r.total_iva*ant/100).toFixed(2)} €</div><div class="as">IVA incluido</div></div>
+    <div class="pres-anti"><div class="al">Resto a la entrega (${100-ant}%)</div><div class="av">${(r.total_iva*(1-ant/100)).toFixed(2)} €</div><div class="as">IVA incluido</div></div>
+    <div class="pres-anti"><div class="al">Total con IVA</div><div class="av">${r.total_iva.toFixed(2)} €</div><div class="as">Base: ${r.total.toFixed(2)} € + IVA: ${(r.total*IVA).toFixed(2)} €</div></div>
+  </div>
+
+  <div class="pres-cond">
+    <b>Validez:</b> ${validez} días desde la fecha de emisión &nbsp;·&nbsp;
+    <b>Plazo:</b> ${plazo} &nbsp;·&nbsp;
+    <b>Pago:</b> ${ant}% anticipo + ${100-ant}% a la entrega<br>
+    Los precios incluyen IVA al tipo del 21%. Este documento no constituye factura. DXFMotorsport se reserva el derecho a revisar el presupuesto si las condiciones varían.
+  </div>
+
+  <div class="pres-footer">
+    <div><div class="pres-firma-line"></div><div class="pres-firma-label">Firma y sello · DXFMotorsport</div></div>
+    <div class="pres-footer-info">DXFMotorsport · dxfmotorsport.com<br>Narón, Galicia · España<br>${num} · ${fecha}</div>
+  </div>
+</div>`;
+
+  document.getElementById('pres_render').innerHTML = html;
+  document.getElementById('pres_empty').style.display = 'none';
+  document.getElementById('pres_content').style.display = 'block';
+  switchTab('presupuesto');
+}
+
+function imprimirPresupuesto() { window.print(); }
+function nuevoPresupuesto() { switchTab('resultado'); }
+
+function renderHist() {
+  const l = document.getElementById('hist_lista');
+  if (!historial.length) { l.innerHTML = '<div class="empty">Aún no hay cotizaciones guardadas</div>'; return; }
+  l.innerHTML = historial.map(h => `
+    <div class="hist-item">
+      <span class="hist-num">${h.num}</span>
+      <div class="hist-desc">
+        <div class="hd">${h.desc}${h.urg?'<span class="hbadge urg">urgente</span>':''}${h.fh?'<span class="hbadge fh">fuera horario</span>':''}${h.serie?'<span class="hbadge serie">serie</span>':''}</div>
+        <div class="hm">${h.fecha} · ${h.cli} · ${h.mat} · ${h.cant} ud${h.cant>1?'s':''}</div>
+      </div>
+      <span class="hist-precio">${h.total}€</span>
+    </div>`).join('');
+}
+
+function limpiarHist() { historial = []; renderHist(); }
+
+calc();
+</script>
+</body>
+</html>
