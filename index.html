@@ -365,6 +365,8 @@
       .topbar-sub { display: none; }
     }
   </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 </head>
 <body>
 
@@ -868,7 +870,226 @@ function guardarYGenerar() {
   switchTab('presupuesto');
 }
 
-function imprimirPresupuesto() { window.print(); }
+function imprimirPresupuesto() {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+  const r = calcCore();
+  const num = 'DXF-' + String(numP-1).padStart(3,'0');
+  const fecha = new Date().toLocaleDateString('es-ES', {day:'numeric',month:'long',year:'numeric'});
+  const cli = document.getElementById('cli_nombre').value || 'Cliente';
+  const cli_nif = document.getElementById('cli_nif').value;
+  const cli_dir = document.getElementById('cli_dir').value;
+  const cli_c = document.getElementById('cli_contacto').value;
+  const cli_v = document.getElementById('cli_vehiculo').value;
+  const desc = document.getElementById('desc').value || 'Sin descripción';
+  const matEl = document.getElementById('mat_tipo');
+  const mat = matEl.options[matEl.selectedIndex].text;
+  const notas = document.getElementById('notas').value.trim();
+  const plazo = document.getElementById('plazo').value || 'A convenir';
+  const validez = n('validez') || 30;
+  const ant = n('anticipo') || 50;
+  const totalMins = OPS.filter(ch).reduce((s,o) => s + n('t_'+o), 0);
+  const opsList = OPS.filter(ch).map(o => document.querySelector('label[for=op_'+o+']').textContent + ' (' + n('t_'+o) + ' min)').join(', ');
+  const extras = r.urg ? ' — URGENTE +25%' : r.fh ? ' — FUERA HORARIO +50%' : '';
+
+  const W = 210, margin = 15, contentW = W - margin*2;
+  let y = margin;
+
+  // --- CABECERA ---
+  doc.setFillColor(17,17,17);
+  doc.rect(margin, y, contentW, 22, 'F');
+
+  // Logo en cabecera (blanco sobre negro)
+  const logoImg = new Image();
+  logoImg.src = document.getElementById('toplogo').src;
+  doc.addImage(logoImg, 'JPEG', margin+3, y+2, 18, 18);
+
+  doc.setTextColor(255,255,255);
+  doc.setFontSize(14);
+  doc.setFont('helvetica','bold');
+  doc.text('DXFMotorsport', margin+24, y+10);
+  doc.setFontSize(8);
+  doc.setFont('helvetica','normal');
+  doc.text('dxfmotorsport.com  ·  Narón, Galicia · España', margin+24, y+16);
+
+  // Número presupuesto (derecha)
+  doc.setFontSize(16);
+  doc.setFont('helvetica','bold');
+  doc.text(num, W-margin, y+10, {align:'right'});
+  doc.setFontSize(8);
+  doc.setFont('helvetica','normal');
+  doc.text('Fecha: ' + fecha, W-margin, y+15, {align:'right'});
+
+  // Badge PRESUPUESTO
+  doc.setFillColor(80,80,80);
+  doc.roundedRect(W-margin-26, y+17, 26, 5, 1, 1, 'F');
+  doc.setFontSize(6);
+  doc.setTextColor(255,255,255);
+  doc.text('PRESUPUESTO', W-margin-13, y+20.5, {align:'center'});
+
+  y += 28;
+
+  // --- CLIENTE ---
+  doc.setTextColor(150,150,150);
+  doc.setFontSize(7);
+  doc.setFont('helvetica','bold');
+  doc.text('CLIENTE', margin, y);
+  y += 3;
+  doc.setDrawColor(220,220,220);
+  doc.line(margin, y, W-margin, y);
+  y += 3;
+
+  doc.setFillColor(248,248,248);
+  doc.rect(margin, y, contentW, 3, 'F');
+  doc.setFillColor(17,17,17);
+  doc.rect(margin, y, 2, 20, 'F');
+
+  doc.setTextColor(30,30,30);
+  doc.setFontSize(11);
+  doc.setFont('helvetica','bold');
+  doc.text(cli, margin+5, y+6);
+  doc.setFontSize(8);
+  doc.setFont('helvetica','normal');
+  doc.setTextColor(100,100,100);
+  let cliY = y+11;
+  if(cli_nif){ doc.text('NIF/CIF: '+cli_nif, margin+5, cliY); cliY+=5; }
+  if(cli_dir){ doc.text(cli_dir, margin+5, cliY); cliY+=5; }
+  if(cli_c){ doc.text(cli_c, margin+5, cliY); cliY+=5; }
+  if(cli_v){ doc.text('Vehículo: '+cli_v, margin+5, cliY); cliY+=5; }
+  y = Math.max(y+22, cliY+3);
+
+  // --- DETALLE DEL TRABAJO ---
+  doc.setTextColor(150,150,150);
+  doc.setFontSize(7);
+  doc.setFont('helvetica','bold');
+  doc.text('DETALLE DEL TRABAJO', margin, y);
+  y += 3;
+  doc.line(margin, y, W-margin, y);
+  y += 3;
+
+  // Tabla trabajo con autotable
+  const descCell = desc + extras + '
+' + OPS.filter(ch).map(o => '· ' + document.querySelector('label[for=op_'+o+']').textContent + ' (' + n('t_'+o) + ' min)').join('
+') + (notas ? '
+  Nota: '+notas : '');
+
+  doc.autoTable({
+    startY: y,
+    margin: {left: margin, right: margin},
+    head: [['Descripción','Material','Tiempo','Uds','Precio/h','Base imp.']],
+    body: [[descCell, mat, totalMins+' min', r.cant, r.pvp_h.toFixed(2)+' €', r.unit.toFixed(2)+' €']],
+    headStyles: { fillColor:[17,17,17], fontSize:7, fontStyle:'bold', textColor:[255,255,255], cellPadding:3 },
+    bodyStyles: { fontSize:8, cellPadding:3, valign:'top' },
+    columnStyles: {
+      0: {cellWidth:70},
+      1: {cellWidth:25},
+      2: {cellWidth:18},
+      3: {cellWidth:10, halign:'right'},
+      4: {cellWidth:22, halign:'right'},
+      5: {cellWidth:25, halign:'right'}
+    },
+    alternateRowStyles: {fillColor:[250,250,250]},
+    tableLineColor:[220,220,220],
+    tableLineWidth:0.1
+  });
+  y = doc.lastAutoTable.finalY + 4;
+
+  // --- TOTALES ---
+  const totalesData = [
+    ['','Base imponible', r.total.toFixed(2)+' €'],
+  ];
+  if(r.dto.pct>0) totalesData.push(['Descuento '+r.dto.label,'','-'+r.dto_eur.toFixed(2)+' €']);
+  if(r.urg) totalesData.push(['Recargo urgencia (+25%)','','+'+r.rec_eur.toFixed(2)+' €']);
+  if(r.fh) totalesData.push(['Recargo fuera horario (+50%)','','+'+r.rec_eur.toFixed(2)+' €']);
+  totalesData.push(['','IVA 21%', (r.total*IVA).toFixed(2)+' €']);
+
+  doc.autoTable({
+    startY: y,
+    margin: {left: margin, right: margin},
+    body: totalesData,
+    bodyStyles: {fontSize:8, cellPadding:2, textColor:[100,100,100]},
+    columnStyles: {
+      0: {cellWidth:90, fontStyle:'bold', textColor:[80,80,80]},
+      1: {cellWidth:60, halign:'right'},
+      2: {cellWidth:30, halign:'right', fontStyle:'bold', textColor:[30,30,30]}
+    },
+    showHead: false,
+    tableLineWidth:0
+  });
+  y = doc.lastAutoTable.finalY + 1;
+
+  // TOTAL final (fila negra)
+  doc.autoTable({
+    startY: y,
+    margin: {left: margin, right: margin},
+    body: [['','TOTAL CON IVA', r.total_iva.toFixed(2)+' €']],
+    bodyStyles: {fillColor:[17,17,17], textColor:[255,255,255], fontSize:12, fontStyle:'bold', cellPadding:4},
+    columnStyles: {
+      0: {cellWidth:90},
+      1: {cellWidth:60, halign:'right'},
+      2: {cellWidth:30, halign:'right'}
+    },
+    showHead: false,
+  });
+  y = doc.lastAutoTable.finalY + 6;
+
+  // --- FORMA DE PAGO ---
+  doc.setTextColor(150,150,150);
+  doc.setFontSize(7);
+  doc.setFont('helvetica','bold');
+  doc.text('FORMA DE PAGO', margin, y);
+  y += 4;
+
+  const boxW = (contentW-8)/3;
+  const antiLabels = [
+    {label:'ANTICIPO AL CONFIRMAR ('+ant+'%)', val:(r.total_iva*ant/100).toFixed(2)+' €'},
+    {label:'RESTO A LA ENTREGA ('+(100-ant)+'%)', val:(r.total_iva*(1-ant/100)).toFixed(2)+' €'},
+    {label:'TOTAL CON IVA', val:r.total_iva.toFixed(2)+' €'}
+  ];
+  antiLabels.forEach((item,i) => {
+    const bx = margin + i*(boxW+4);
+    doc.setDrawColor(220,220,220);
+    doc.setFillColor(255,255,255);
+    doc.roundedRect(bx, y, boxW, 16, 1, 1, 'FD');
+    doc.setTextColor(150,150,150);
+    doc.setFontSize(6.5);
+    doc.setFont('helvetica','normal');
+    // wrap label
+    const lines = doc.splitTextToSize(item.label, boxW-4);
+    doc.text(lines, bx+boxW/2, y+5, {align:'center'});
+    doc.setTextColor(17,17,17);
+    doc.setFontSize(11);
+    doc.setFont('helvetica','bold');
+    doc.text(item.val, bx+boxW/2, y+13, {align:'center'});
+  });
+  y += 22;
+
+  // --- CONDICIONES ---
+  doc.setFillColor(248,248,248);
+  doc.rect(margin, y, contentW, 14, 'F');
+  doc.setTextColor(100,100,100);
+  doc.setFontSize(7);
+  doc.setFont('helvetica','normal');
+  const condText = 'Validez: '+validez+' días desde la fecha de emisión  ·  Plazo de entrega: '+plazo+'  ·  Pago: '+ant+'% anticipo + '+(100-ant)+'% a la entrega
+Precios incluyen IVA al 21%. Este documento no constituye factura. DXFMotorsport se reserva el derecho a revisar el presupuesto si las condiciones varían.';
+  const condLines = doc.splitTextToSize(condText, contentW-8);
+  doc.text(condLines, margin+4, y+4);
+  y += 18;
+
+  // --- PIE DE FIRMA ---
+  doc.setDrawColor(220,220,220);
+  doc.line(margin, y, margin+50, y);
+  doc.setTextColor(150,150,150);
+  doc.setFontSize(7);
+  doc.text('Firma y sello · DXFMotorsport', margin, y+4);
+
+  doc.setFontSize(7);
+  doc.text('DXFMotorsport · dxfmotorsport.com · Narón, Galicia · España', W-margin, y+4, {align:'right'});
+  doc.text(num+' · '+fecha, W-margin, y+8, {align:'right'});
+
+  // Guardar
+  doc.save('Presupuesto_'+num+'.pdf');
+}
 function nuevoPresupuesto() { switchTab('resultado'); }
 
 function renderHist() {
