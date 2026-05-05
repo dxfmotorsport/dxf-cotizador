@@ -365,8 +365,6 @@
       .topbar-sub { display: none; }
     }
   </style>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 </head>
 <body>
 
@@ -871,8 +869,6 @@ function guardarYGenerar() {
 }
 
 function imprimirPresupuesto() {
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
   const r = calcCore();
   const num = 'DXF-' + String(numP-1).padStart(3,'0');
   const fecha = new Date().toLocaleDateString('es-ES', {day:'numeric',month:'long',year:'numeric'});
@@ -889,206 +885,178 @@ function imprimirPresupuesto() {
   const validez = n('validez') || 30;
   const ant = n('anticipo') || 50;
   const totalMins = OPS.filter(ch).reduce((s,o) => s + n('t_'+o), 0);
-  const opsList = OPS.filter(ch).map(o => document.querySelector('label[for=op_'+o+']').textContent + ' (' + n('t_'+o) + ' min)').join(', ');
-  const extras = r.urg ? ' — URGENTE +25%' : r.fh ? ' — FUERA HORARIO +50%' : '';
+  const opsList = OPS.filter(ch).map(o => '&middot; ' + document.querySelector('label[for=op_'+o+']').textContent + ' (' + n('t_'+o) + ' min)').join('<br>');
+  const extras = r.urg ? ' <span style="color:#BA7517;font-weight:700">— URGENTE +25%</span>' : r.fh ? ' <span style="color:#A32D2D;font-weight:700">— FUERA HORARIO +50%</span>' : '';
+  const logo = document.getElementById('toplogo').src;
 
-  const W = 210, margin = 15, contentW = W - margin*2;
-  let y = margin;
+  const cliLines = [cli];
+  if(cli_nif) cliLines.push('NIF/CIF: '+cli_nif);
+  if(cli_dir) cliLines.push(cli_dir);
+  if(cli_c) cliLines.push(cli_c);
+  if(cli_v) cliLines.push('Vehículo: '+cli_v);
 
-  // --- CABECERA ---
-  doc.setFillColor(17,17,17);
-  doc.rect(margin, y, contentW, 22, 'F');
+  const dtoRow = r.dto.pct>0 ? `<tr><td colspan="2" style="color:#27500A;font-weight:600">Descuento ${r.dto.label}</td><td style="text-align:right;color:#27500A;font-weight:600">-${r.dto_eur.toFixed(2)} €</td></tr>` : '';
+  const urgRow = r.urg ? `<tr><td colspan="2" style="color:#BA7517;font-weight:600">Recargo urgencia (+25%)</td><td style="text-align:right;color:#BA7517;font-weight:600">+${r.rec_eur.toFixed(2)} €</td></tr>` : '';
+  const fhRow = r.fh ? `<tr><td colspan="2" style="color:#A32D2D;font-weight:600">Recargo fuera horario (+50%)</td><td style="text-align:right;color:#A32D2D;font-weight:600">+${r.rec_eur.toFixed(2)} €</td></tr>` : '';
+  const notasHtml = notas ? `<div style="margin-top:5px;font-size:10px;color:#666"><b>Nota:</b> ${notas}</div>` : '';
 
-  // Logo en cabecera (blanco sobre negro)
-  const logoImg = new Image();
-  logoImg.src = document.getElementById('toplogo').src;
-  doc.addImage(logoImg, 'JPEG', margin+3, y+2, 18, 18);
+  const html = `<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Presupuesto ${num}</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#1a1a1a;background:#fff;padding:20px}
+  .header{display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:14px;border-bottom:2.5px solid #111;margin-bottom:16px;gap:10px}
+  .brand{display:flex;align-items:center;gap:12px}
+  .brand img{width:64px;height:64px;object-fit:contain}
+  .brand-name{font-size:18px;font-weight:700;color:#111}
+  .brand-sub{font-size:10px;color:#666;margin-top:2px;line-height:1.5}
+  .doc-info{text-align:right}
+  .doc-num{font-size:20px;font-weight:700;color:#111}
+  .doc-fecha{font-size:10px;color:#777;margin-top:3px}
+  .badge{display:inline-block;background:#111;color:#fff;font-size:9px;font-weight:700;padding:3px 10px;border-radius:2px;margin-top:6px;letter-spacing:.08em}
+  .section-title{font-size:8px;font-weight:700;color:#999;text-transform:uppercase;letter-spacing:.1em;margin:14px 0 5px;border-bottom:1px solid #eee;padding-bottom:3px}
+  .cli-box{background:#f8f8f8;padding:10px 12px;border-left:3px solid #111}
+  .cli-name{font-size:13px;font-weight:700;color:#111;margin-bottom:3px}
+  .cli-sub{font-size:10px;color:#777;line-height:1.6}
+  table{width:100%;border-collapse:collapse;font-size:11px}
+  th{background:#111;color:#fff;padding:8px 10px;text-align:left;font-size:9px;text-transform:uppercase;letter-spacing:.06em;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  th.r{text-align:right}
+  td{padding:8px 10px;border-bottom:1px solid #eee;vertical-align:top}
+  td.r{text-align:right;font-weight:500}
+  tr:nth-child(even) td{background:#fafafa}
+  .tot-table td{padding:4px 10px;color:#666;border-bottom:none}
+  .tot-table td.r{text-align:right;font-weight:600;color:#222}
+  .tot-final{background:#111!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .tot-final td{color:#fff!important;font-weight:700!important;font-size:13px!important;padding:10px!important;border-bottom:none!important}
+  .pay-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:12px}
+  .pay-box{border:1px solid #e0e0e0;border-radius:3px;padding:10px;text-align:center}
+  .pay-label{font-size:8px;color:#999;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;line-height:1.3}
+  .pay-val{font-size:16px;font-weight:700;color:#111}
+  .pay-sub{font-size:9px;color:#aaa;margin-top:2px}
+  .cond{background:#f8f8f8;padding:10px 12px;font-size:10px;color:#666;line-height:1.7;margin-top:14px;border-radius:2px}
+  .footer{display:flex;justify-content:space-between;align-items:flex-end;margin-top:20px;padding-top:14px;border-top:1px solid #ddd}
+  .firma-line{width:130px;height:1px;background:#bbb;margin-bottom:5px}
+  .firma-label{font-size:9px;color:#999;text-transform:uppercase;letter-spacing:.06em}
+  .footer-info{font-size:9px;color:#bbb;text-align:right;line-height:1.6}
+  .ops{font-size:10px;color:#666;margin-top:4px;line-height:1.6}
+  @media print{
+    body{padding:10px}
+    .no-print{display:none!important}
+    @page{margin:10mm;size:A4}
+  }
+</style>
+</head>
+<body>
 
-  doc.setTextColor(255,255,255);
-  doc.setFontSize(14);
-  doc.setFont('helvetica','bold');
-  doc.text('DXFMotorsport', margin+24, y+10);
-  doc.setFontSize(8);
-  doc.setFont('helvetica','normal');
-  doc.text('dxfmotorsport.com  ·  Narón, Galicia · España', margin+24, y+16);
+<div class="no-print" style="margin-bottom:16px;display:flex;gap:10px">
+  <button onclick="window.print()" style="padding:10px 20px;background:#111;color:#fff;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer">⬇ Guardar PDF</button>
+  <button onclick="window.close()" style="padding:10px 16px;background:#f0f0f0;color:#333;border:none;border-radius:6px;font-size:13px;cursor:pointer">Cerrar</button>
+</div>
 
-  // Número presupuesto (derecha)
-  doc.setFontSize(16);
-  doc.setFont('helvetica','bold');
-  doc.text(num, W-margin, y+10, {align:'right'});
-  doc.setFontSize(8);
-  doc.setFont('helvetica','normal');
-  doc.text('Fecha: ' + fecha, W-margin, y+15, {align:'right'});
+<div class="header">
+  <div class="brand">
+    <img src="${logo}" alt="DXFMotorsport">
+    <div>
+      <div class="brand-name">DXFMotorsport</div>
+      <div class="brand-sub">dxfmotorsport.com<br>Narón, Galicia · España</div>
+    </div>
+  </div>
+  <div class="doc-info">
+    <div class="doc-num">${num}</div>
+    <div class="doc-fecha">Fecha: ${fecha}</div>
+    <div><span class="badge">PRESUPUESTO</span></div>
+  </div>
+</div>
 
-  // Badge PRESUPUESTO
-  doc.setFillColor(80,80,80);
-  doc.roundedRect(W-margin-26, y+17, 26, 5, 1, 1, 'F');
-  doc.setFontSize(6);
-  doc.setTextColor(255,255,255);
-  doc.text('PRESUPUESTO', W-margin-13, y+20.5, {align:'center'});
+<div class="section-title">Cliente</div>
+<div class="cli-box">
+  <div class="cli-name">${cli}</div>
+  <div class="cli-sub">${cliLines.slice(1).join('<br>')}</div>
+</div>
 
-  y += 28;
+<div class="section-title">Detalle del trabajo</div>
+<table>
+  <tr>
+    <th style="width:40%">Descripción</th>
+    <th style="width:20%">Material</th>
+    <th style="width:10%">Tiempo</th>
+    <th class="r" style="width:8%">Uds</th>
+    <th class="r" style="width:10%">Precio/h</th>
+    <th class="r" style="width:12%">Base imp.</th>
+  </tr>
+  <tr>
+    <td>${desc}${extras}<div class="ops">${opsList}</div>${notasHtml}</td>
+    <td>${mat}</td>
+    <td>${totalMins} min</td>
+    <td class="r">${r.cant}</td>
+    <td class="r">${r.pvp_h.toFixed(2)} €</td>
+    <td class="r">${r.unit.toFixed(2)} €</td>
+  </tr>
+</table>
 
-  // --- CLIENTE ---
-  doc.setTextColor(150,150,150);
-  doc.setFontSize(7);
-  doc.setFont('helvetica','bold');
-  doc.text('CLIENTE', margin, y);
-  y += 3;
-  doc.setDrawColor(220,220,220);
-  doc.line(margin, y, W-margin, y);
-  y += 3;
+<table class="tot-table" style="margin-top:6px">
+  <tr><td style="width:60%"></td><td>Base imponible</td><td class="r">${r.total.toFixed(2)} €</td></tr>
+  ${dtoRow}${urgRow}${fhRow}
+  <tr><td></td><td style="font-weight:600">IVA 21%</td><td class="r">${(r.total*IVA).toFixed(2)} €</td></tr>
+  <tr class="tot-final"><td></td><td>TOTAL CON IVA</td><td class="r" style="white-space:nowrap">${r.total_iva.toFixed(2)} €</td></tr>
+</table>
 
-  doc.setFillColor(248,248,248);
-  doc.rect(margin, y, contentW, 3, 'F');
-  doc.setFillColor(17,17,17);
-  doc.rect(margin, y, 2, 20, 'F');
+<div class="section-title" style="margin-top:14px">Forma de pago</div>
+<div class="pay-grid">
+  <div class="pay-box">
+    <div class="pay-label">Anticipo al confirmar (${ant}%)</div>
+    <div class="pay-val">${(r.total_iva*ant/100).toFixed(2)} €</div>
+    <div class="pay-sub">IVA incluido</div>
+  </div>
+  <div class="pay-box">
+    <div class="pay-label">Resto a la entrega (${100-ant}%)</div>
+    <div class="pay-val">${(r.total_iva*(1-ant/100)).toFixed(2)} €</div>
+    <div class="pay-sub">IVA incluido</div>
+  </div>
+  <div class="pay-box">
+    <div class="pay-label">Total con IVA</div>
+    <div class="pay-val">${r.total_iva.toFixed(2)} €</div>
+    <div class="pay-sub">Base: ${r.total.toFixed(2)} € + IVA: ${(r.total*IVA).toFixed(2)} €</div>
+  </div>
+</div>
 
-  doc.setTextColor(30,30,30);
-  doc.setFontSize(11);
-  doc.setFont('helvetica','bold');
-  doc.text(cli, margin+5, y+6);
-  doc.setFontSize(8);
-  doc.setFont('helvetica','normal');
-  doc.setTextColor(100,100,100);
-  let cliY = y+11;
-  if(cli_nif){ doc.text('NIF/CIF: '+cli_nif, margin+5, cliY); cliY+=5; }
-  if(cli_dir){ doc.text(cli_dir, margin+5, cliY); cliY+=5; }
-  if(cli_c){ doc.text(cli_c, margin+5, cliY); cliY+=5; }
-  if(cli_v){ doc.text('Vehículo: '+cli_v, margin+5, cliY); cliY+=5; }
-  y = Math.max(y+22, cliY+3);
+<div class="cond">
+  <b>Validez:</b> ${validez} días &nbsp;·&nbsp; <b>Plazo:</b> ${plazo} &nbsp;·&nbsp; <b>Pago:</b> ${ant}% anticipo + ${100-ant}% a la entrega<br>
+  Precios incluyen IVA al 21%. Este documento no constituye factura. DXFMotorsport se reserva el derecho a revisar el presupuesto si las condiciones varían.
+</div>
 
-  // --- DETALLE DEL TRABAJO ---
-  doc.setTextColor(150,150,150);
-  doc.setFontSize(7);
-  doc.setFont('helvetica','bold');
-  doc.text('DETALLE DEL TRABAJO', margin, y);
-  y += 3;
-  doc.line(margin, y, W-margin, y);
-  y += 3;
+<div class="footer">
+  <div>
+    <div class="firma-line"></div>
+    <div class="firma-label">Firma y sello · DXFMotorsport</div>
+  </div>
+  <div class="footer-info">
+    DXFMotorsport · dxfmotorsport.com<br>
+    Narón, Galicia · España<br>
+    ${num} · ${fecha}
+  </div>
+</div>
 
-  // Tabla trabajo con autotable
-  const descCell = desc + extras + '
-' + OPS.filter(ch).map(o => '· ' + document.querySelector('label[for=op_'+o+']').textContent + ' (' + n('t_'+o) + ' min)').join('
-') + (notas ? '
-  Nota: '+notas : '');
+<script>
+  // En móvil Safari abre diálogo de impresión automáticamente
+  window.onload = function() {
+    // Pequeño delay para que cargue la imagen del logo
+    setTimeout(function() {
+      // No abrimos print automático, dejamos que el usuario pulse el botón
+    }, 500);
+  };
+</script>
+</body>
+</html>`;
 
-  doc.autoTable({
-    startY: y,
-    margin: {left: margin, right: margin},
-    head: [['Descripción','Material','Tiempo','Uds','Precio/h','Base imp.']],
-    body: [[descCell, mat, totalMins+' min', r.cant, r.pvp_h.toFixed(2)+' €', r.unit.toFixed(2)+' €']],
-    headStyles: { fillColor:[17,17,17], fontSize:7, fontStyle:'bold', textColor:[255,255,255], cellPadding:3 },
-    bodyStyles: { fontSize:8, cellPadding:3, valign:'top' },
-    columnStyles: {
-      0: {cellWidth:70},
-      1: {cellWidth:25},
-      2: {cellWidth:18},
-      3: {cellWidth:10, halign:'right'},
-      4: {cellWidth:22, halign:'right'},
-      5: {cellWidth:25, halign:'right'}
-    },
-    alternateRowStyles: {fillColor:[250,250,250]},
-    tableLineColor:[220,220,220],
-    tableLineWidth:0.1
-  });
-  y = doc.lastAutoTable.finalY + 4;
-
-  // --- TOTALES ---
-  const totalesData = [
-    ['','Base imponible', r.total.toFixed(2)+' €'],
-  ];
-  if(r.dto.pct>0) totalesData.push(['Descuento '+r.dto.label,'','-'+r.dto_eur.toFixed(2)+' €']);
-  if(r.urg) totalesData.push(['Recargo urgencia (+25%)','','+'+r.rec_eur.toFixed(2)+' €']);
-  if(r.fh) totalesData.push(['Recargo fuera horario (+50%)','','+'+r.rec_eur.toFixed(2)+' €']);
-  totalesData.push(['','IVA 21%', (r.total*IVA).toFixed(2)+' €']);
-
-  doc.autoTable({
-    startY: y,
-    margin: {left: margin, right: margin},
-    body: totalesData,
-    bodyStyles: {fontSize:8, cellPadding:2, textColor:[100,100,100]},
-    columnStyles: {
-      0: {cellWidth:90, fontStyle:'bold', textColor:[80,80,80]},
-      1: {cellWidth:60, halign:'right'},
-      2: {cellWidth:30, halign:'right', fontStyle:'bold', textColor:[30,30,30]}
-    },
-    showHead: false,
-    tableLineWidth:0
-  });
-  y = doc.lastAutoTable.finalY + 1;
-
-  // TOTAL final (fila negra)
-  doc.autoTable({
-    startY: y,
-    margin: {left: margin, right: margin},
-    body: [['','TOTAL CON IVA', r.total_iva.toFixed(2)+' €']],
-    bodyStyles: {fillColor:[17,17,17], textColor:[255,255,255], fontSize:12, fontStyle:'bold', cellPadding:4},
-    columnStyles: {
-      0: {cellWidth:90},
-      1: {cellWidth:60, halign:'right'},
-      2: {cellWidth:30, halign:'right'}
-    },
-    showHead: false,
-  });
-  y = doc.lastAutoTable.finalY + 6;
-
-  // --- FORMA DE PAGO ---
-  doc.setTextColor(150,150,150);
-  doc.setFontSize(7);
-  doc.setFont('helvetica','bold');
-  doc.text('FORMA DE PAGO', margin, y);
-  y += 4;
-
-  const boxW = (contentW-8)/3;
-  const antiLabels = [
-    {label:'ANTICIPO AL CONFIRMAR ('+ant+'%)', val:(r.total_iva*ant/100).toFixed(2)+' €'},
-    {label:'RESTO A LA ENTREGA ('+(100-ant)+'%)', val:(r.total_iva*(1-ant/100)).toFixed(2)+' €'},
-    {label:'TOTAL CON IVA', val:r.total_iva.toFixed(2)+' €'}
-  ];
-  antiLabels.forEach((item,i) => {
-    const bx = margin + i*(boxW+4);
-    doc.setDrawColor(220,220,220);
-    doc.setFillColor(255,255,255);
-    doc.roundedRect(bx, y, boxW, 16, 1, 1, 'FD');
-    doc.setTextColor(150,150,150);
-    doc.setFontSize(6.5);
-    doc.setFont('helvetica','normal');
-    // wrap label
-    const lines = doc.splitTextToSize(item.label, boxW-4);
-    doc.text(lines, bx+boxW/2, y+5, {align:'center'});
-    doc.setTextColor(17,17,17);
-    doc.setFontSize(11);
-    doc.setFont('helvetica','bold');
-    doc.text(item.val, bx+boxW/2, y+13, {align:'center'});
-  });
-  y += 22;
-
-  // --- CONDICIONES ---
-  doc.setFillColor(248,248,248);
-  doc.rect(margin, y, contentW, 14, 'F');
-  doc.setTextColor(100,100,100);
-  doc.setFontSize(7);
-  doc.setFont('helvetica','normal');
-  const condText = 'Validez: '+validez+' días desde la fecha de emisión  ·  Plazo de entrega: '+plazo+'  ·  Pago: '+ant+'% anticipo + '+(100-ant)+'% a la entrega
-Precios incluyen IVA al 21%. Este documento no constituye factura. DXFMotorsport se reserva el derecho a revisar el presupuesto si las condiciones varían.';
-  const condLines = doc.splitTextToSize(condText, contentW-8);
-  doc.text(condLines, margin+4, y+4);
-  y += 18;
-
-  // --- PIE DE FIRMA ---
-  doc.setDrawColor(220,220,220);
-  doc.line(margin, y, margin+50, y);
-  doc.setTextColor(150,150,150);
-  doc.setFontSize(7);
-  doc.text('Firma y sello · DXFMotorsport', margin, y+4);
-
-  doc.setFontSize(7);
-  doc.text('DXFMotorsport · dxfmotorsport.com · Narón, Galicia · España', W-margin, y+4, {align:'right'});
-  doc.text(num+' · '+fecha, W-margin, y+8, {align:'right'});
-
-  // Guardar
-  doc.save('Presupuesto_'+num+'.pdf');
+  // Abrir en nueva pestaña
+  const blob = new Blob([html], {type: 'text/html;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  window.open(url, '_blank');
 }
 function nuevoPresupuesto() { switchTab('resultado'); }
 
