@@ -293,6 +293,27 @@
       .pres-tabla td, .pres-tabla th { padding: 6px 5px; font-size: 10px; }
     }
 
+    /* IMPRESION / PDF */
+    @media print {
+      * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+      body { background: #fff !important; height: auto !important; display: block !important; }
+      .topbar, .sidebar, .btn-row, #pres_empty { display: none !important; }
+      .layout { display: block !important; }
+      .content { padding: 0 !important; overflow: visible !important; }
+      .panel { display: none !important; }
+      #tab-presupuesto { display: block !important; }
+      #pres_content { display: block !important; }
+      .pres-preview { border: none !important; border-radius: 0 !important; padding: 24px !important; box-shadow: none !important; width: 100% !important; }
+      .pres-tabla th { background: #111 !important; color: #fff !important; }
+      .pres-totales tr.fin { background: #111 !important; }
+      .pres-totales tr.fin td { color: #fff !important; white-space: nowrap !important; }
+      .pres-badge { background: #111 !important; color: #fff !important; }
+      .pres-cli { background: #f8f8f8 !important; }
+      .hide-mobile { display: table-cell !important; }
+      .pres-anticipo { flex-wrap: nowrap !important; }
+      .pres-footer { flex-wrap: nowrap !important; }
+    }
+
     /* Totales */
     .pres-totales { width: 100%; margin-top: 8px; border-collapse: collapse; font-size: 12px; }
     .pres-totales td { padding: 4px 8px; color: #666; }
