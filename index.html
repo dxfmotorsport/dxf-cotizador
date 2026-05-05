@@ -261,42 +261,58 @@
       background: #fff;
       border: 0.5px solid var(--border);
       border-radius: var(--radius-lg);
-      padding: 20px;
+      padding: 16px;
       font-family: Arial, sans-serif;
       font-size: 12px;
+      width: 100%;
+      overflow-wrap: break-word;
+      word-break: break-word;
     }
-    .pres-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; padding-bottom: 16px; border-bottom: 2px solid #111; }
-    .pres-brand { display: flex; align-items: center; gap: 12px; }
-    .pres-brand img { width: 60px; height: 60px; object-fit: contain; }
-    .pres-brand-name { font-size: 17px; font-weight: 700; color: #111; }
-    .pres-brand-sub { font-size: 10px; color: #666; line-height: 1.6; }
-    .pres-num { font-size: 18px; font-weight: 700; text-align: right; }
-    .pres-badge { display: inline-block; background: #111; color: #fff; font-size: 9px; font-weight: 700; padding: 3px 10px; border-radius: 2px; margin-top: 6px; letter-spacing: .1em; text-transform: uppercase; }
-    .pres-section-title { font-size: 9px; font-weight: 700; color: #999; text-transform: uppercase; letter-spacing: .1em; margin: 14px 0 6px; border-bottom: 1px solid #eee; padding-bottom: 4px; }
-    .pres-cli { background: #f8f8f8; padding: 10px 12px; border-left: 3px solid #111; }
+    .pres-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; padding-bottom: 14px; border-bottom: 2px solid #111; gap: 8px; flex-wrap: wrap; }
+    .pres-brand { display: flex; align-items: center; gap: 10px; }
+    .pres-brand img { width: 52px; height: 52px; object-fit: contain; flex-shrink: 0; }
+    .pres-brand-name { font-size: 15px; font-weight: 700; color: #111; }
+    .pres-brand-sub { font-size: 10px; color: #666; line-height: 1.5; }
+    .pres-num { font-size: 16px; font-weight: 700; text-align: right; }
+    .pres-badge { display: inline-block; background: #111; color: #fff; font-size: 9px; font-weight: 700; padding: 3px 8px; border-radius: 2px; margin-top: 5px; letter-spacing: .08em; text-transform: uppercase; }
+    .pres-section-title { font-size: 9px; font-weight: 700; color: #999; text-transform: uppercase; letter-spacing: .08em; margin: 12px 0 5px; border-bottom: 1px solid #eee; padding-bottom: 3px; }
+    .pres-cli { background: #f8f8f8; padding: 8px 10px; border-left: 3px solid #111; }
     .pres-cli-name { font-weight: 700; font-size: 13px; }
+
+    /* Tabla principal — colapsa en móvil */
     .pres-tabla { width: 100%; border-collapse: collapse; font-size: 11px; }
-    .pres-tabla th { background: #111; color: #fff; padding: 7px 10px; text-align: left; font-size: 9px; text-transform: uppercase; letter-spacing: .06em; }
+    .pres-tabla th { background: #111; color: #fff; padding: 6px 8px; text-align: left; font-size: 9px; text-transform: uppercase; letter-spacing: .05em; }
     .pres-tabla th.r { text-align: right; }
-    .pres-tabla td { padding: 8px 10px; border-bottom: 1px solid #ebebeb; }
+    .pres-tabla td { padding: 7px 8px; border-bottom: 1px solid #ebebeb; vertical-align: top; }
     .pres-tabla td.r { text-align: right; font-weight: 500; }
     .pres-tabla tr:nth-child(even) td { background: #fafafa; }
+
+    /* En móvil ocultamos columnas menos importantes */
+    @media (max-width: 700px) {
+      .pres-tabla .hide-mobile { display: none; }
+      .pres-tabla td, .pres-tabla th { padding: 6px 5px; font-size: 10px; }
+    }
+
+    /* Totales */
     .pres-totales { width: 100%; margin-top: 8px; border-collapse: collapse; font-size: 12px; }
-    .pres-totales td { padding: 4px 10px; color: #666; }
-    .pres-totales td.r { text-align: right; min-width: 80px; }
+    .pres-totales td { padding: 4px 8px; color: #666; }
+    .pres-totales td.r { text-align: right; min-width: 70px; }
     .pres-totales tr.fin { background: #111; }
-    .pres-totales tr.fin td { color: #fff!important; font-weight: 700; font-size: 14px; padding: 9px 10px; }
-    .pres-anticipo { display: flex; gap: 8px; margin-top: 10px; }
-    .pres-anti { flex: 1; border: 1px solid #e0e0e0; border-radius: 3px; padding: 8px 10px; text-align: center; }
-    .pres-anti .al { font-size: 9px; color: #999; text-transform: uppercase; margin-bottom: 3px; }
-    .pres-anti .av { font-size: 15px; font-weight: 700; color: #111; }
+    .pres-totales tr.fin td { color: #fff!important; font-weight: 700; font-size: 13px; padding: 8px; }
+
+    /* Anticipo — apila en móvil */
+    .pres-anticipo { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
+    .pres-anti { flex: 1; min-width: 90px; border: 1px solid #e0e0e0; border-radius: 3px; padding: 7px 8px; text-align: center; }
+    .pres-anti .al { font-size: 9px; color: #999; text-transform: uppercase; margin-bottom: 3px; line-height: 1.3; }
+    .pres-anti .av { font-size: 14px; font-weight: 700; color: #111; }
     .pres-anti .as { font-size: 9px; color: #aaa; }
-    .pres-cond { background: #f8f8f8; padding: 10px 12px; font-size: 10px; color: #666; line-height: 1.7; border-radius: 2px; margin-top: 10px; }
-    .pres-footer { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 20px; padding-top: 14px; border-top: 1px solid #ddd; }
-    .pres-firma-line { width: 130px; height: 1px; background: #bbb; margin: 36px auto 5px; }
+
+    .pres-cond { background: #f8f8f8; padding: 9px 10px; font-size: 10px; color: #666; line-height: 1.7; border-radius: 2px; margin-top: 10px; }
+    .pres-footer { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 16px; padding-top: 12px; border-top: 1px solid #ddd; flex-wrap: wrap; gap: 10px; }
+    .pres-firma-line { width: 120px; height: 1px; background: #bbb; margin: 30px auto 5px; }
     .pres-firma-label { font-size: 9px; color: #999; text-align: center; text-transform: uppercase; letter-spacing: .06em; }
     .pres-footer-info { font-size: 9px; color: #bbb; text-align: right; line-height: 1.6; }
-    .pres-ops { font-size: 10px; color: #777; margin-top: 2px; line-height: 1.4; }
+    .pres-ops { font-size: 10px; color: #777; margin-top: 3px; line-height: 1.5; }
     @media (max-width: 700px) {
       .layout { flex-direction: column; }
       .sidebar {
@@ -782,19 +798,19 @@ function guardarYGenerar() {
   <table class="pres-tabla">
     <tr>
       <th style="width:38%">Descripción</th>
-      <th style="width:18%">Material</th>
-      <th style="width:12%">Tiempo</th>
+      <th class="hide-mobile" style="width:18%">Material</th>
+      <th class="hide-mobile" style="width:12%">Tiempo</th>
       <th class="r" style="width:8%">Uds</th>
-      <th class="r" style="width:12%">Precio/h</th>
+      <th class="r hide-mobile" style="width:12%">Precio/h</th>
       <th class="r" style="width:12%">Base imp.</th>
     </tr>
     <tr>
       <td>${desc}${extras}<div class="pres-ops">${opsHtml}</div>${notasHtml}</td>
-      <td>${mat}</td>
-      <td>${totalMins} min</td>
-      <td class="r">${r.cant}</td>
-      <td class="r">${r.pvp_h.toFixed(2)} €</td>
-      <td class="r">${r.unit.toFixed(2)} €</td>
+        <td class="hide-mobile">${mat}</td>
+        <td class="hide-mobile">${totalMins} min</td>
+        <td class="r">${r.cant}</td>
+        <td class="r hide-mobile">${r.pvp_h.toFixed(2)} €</td>
+        <td class="r">${r.unit.toFixed(2)} €</td>
     </tr>
   </table>
 
