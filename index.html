@@ -250,16 +250,62 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-siz
     <div class="g3">
       <div class="field"><label>Material</label>
         <select id="mat_tipo" oninput="calc()">
-          <option value="acero">Acero F-114/F-125</option>
-          <option value="inox">Inox 304/316</option>
-          <option value="aluminio">Aluminio 6061/7075</option>
-          <option value="bronce">Bronce / Laton</option>
-          <option value="titanio">Titanio</option>
-          <option value="otro">Otro / Cliente aporta</option>
+          <optgroup label="Aceros">
+            <option value="acero_f114">Acero F-114 (C45)</option>
+            <option value="acero_f125">Acero F-125 (C60)</option>
+            <option value="acero_f111">Acero F-111 (C20)</option>
+            <option value="acero_bonificado">Acero bonificado 42CrMo4</option>
+            <option value="acero_inox_430">Acero inox 430 (ferritico)</option>
+          </optgroup>
+          <optgroup label="Inoxidables">
+            <option value="inox_304">Inoxidable 304</option>
+            <option value="inox_316">Inoxidable 316 (marino)</option>
+            <option value="inox_303">Inoxidable 303 (maquinado)</option>
+            <option value="inox_duplex">Inox Duplex 2205</option>
+          </optgroup>
+          <optgroup label="Aluminios">
+            <option value="alu_6061">Aluminio 6061-T6</option>
+            <option value="alu_6063">Aluminio 6063</option>
+            <option value="alu_6068">Aluminio 6068</option>
+            <option value="alu_7075">Aluminio 7075-T6 (aviac.)</option>
+            <option value="alu_2024">Aluminio 2024-T3</option>
+            <option value="alu_5083">Aluminio 5083 (marino)</option>
+          </optgroup>
+          <optgroup label="Cobres y latones">
+            <option value="bronce">Bronce CuSn8</option>
+            <option value="laton">Laton CuZn39Pb3</option>
+            <option value="cobre">Cobre electrolitico</option>
+          </optgroup>
+          <optgroup label="Otros metales">
+            <option value="titanio_gr2">Titanio Grado 2 (puro)</option>
+            <option value="titanio_gr5">Titanio Grado 5 (Ti6Al4V)</option>
+            <option value="hierro_gris">Hierro fundido gris</option>
+            <option value="zamak">Zamak / Aleacion zinc</option>
+          </optgroup>
+          <optgroup label="Plasticos tecnicos">
+            <option value="nylon">Nylon PA6 / PA66</option>
+            <option value="delrin">Delrin / POM-C</option>
+            <option value="ptfe">PTFE / Teflon</option>
+            <option value="peek">PEEK</option>
+          </optgroup>
+          <optgroup label="Otro">
+            <option value="otro">Otro material</option>
+            <option value="cliente">Cliente aporta material</option>
+          </optgroup>
         </select>
       </div>
       <div class="field"><label>Coste material (&#8364;)</label><input type="number" id="mat_coste" value="0" min="0" step="0.5" oninput="calc()"></div>
       <div class="field"><label>Desperdicio (%)</label><input type="number" id="mat_desp" value="20" min="0" max="100" oninput="calc()"><div class="note">Virutas, recortes</div></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">Plantillas rapidas</div>
+    <div style="display:flex;gap:7px;flex-wrap:wrap">
+      <button class="btn sm" onclick="plantilla('eje')">Eje / Vastago</button>
+      <button class="btn sm" onclick="plantilla('buje')">Buje / Casquillo</button>
+      <button class="btn sm" onclick="plantilla('rosca')">Pieza roscada</button>
+      <button class="btn sm" onclick="plantilla('acabado')">Solo acabado</button>
+      <button class="btn sm" onclick="plantilla('taladro')">Taladrado</button>
     </div>
   </div>
   <div class="card">
@@ -380,6 +426,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-siz
   <div id="pres_content" style="display:none">
     <div class="pres-actions">
       <button class="btn primary" onclick="abrirPDF()">Guardar PDF</button>
+      <button class="btn" style="background:#25D366;color:#fff;border-color:#25D366" onclick="compartirWhatsApp()">WhatsApp</button>
       <button class="btn" onclick="switchTab('resultado')">Volver</button>
     </div>
     <div class="pres-doc" id="pres_render"></div>
@@ -611,6 +658,105 @@ function renderHist(){
   l.innerHTML=html;
 }
 function limpiarHist(){historial=[];renderHist();}
+
+// AJUSTES PERSISTENTES - cargar al inicio
+function cargarAjustes(){
+  var mano = localStorage.getItem('dxf_mano');
+  var margen = localStorage.getItem('dxf_margen');
+  var minimo = localStorage.getItem('dxf_minimo');
+  var minimo_mat = localStorage.getItem('dxf_minimo_mat');
+  if(mano) document.getElementById('mano').value = mano;
+  if(margen) document.getElementById('margen').value = margen;
+  if(minimo) document.getElementById('minimo').value = minimo;
+  if(minimo_mat) document.getElementById('minimo_mat').value = minimo_mat;
+}
+
+function guardarAjustes(){
+  localStorage.setItem('dxf_mano', document.getElementById('mano').value);
+  localStorage.setItem('dxf_margen', document.getElementById('margen').value);
+  localStorage.setItem('dxf_minimo', document.getElementById('minimo').value);
+  localStorage.setItem('dxf_minimo_mat', document.getElementById('minimo_mat').value);
+}
+
+// Guardar ajustes al cambiar cualquier campo de coste
+['mano','margen','minimo','minimo_mat'].forEach(function(id){
+  document.getElementById(id).addEventListener('change', guardarAjustes);
+});
+
+// PLANTILLAS DE TRABAJO
+function plantilla(tipo){
+  // Desmarcar todas las operaciones primero
+  ['setup','cilin','rosca','talad','pieza','acab'].forEach(function(op){
+    document.getElementById('op_'+op).checked = false;
+  });
+  
+  if(tipo === 'eje'){
+    document.getElementById('op_setup').checked = true;
+    document.getElementById('op_cilin').checked = true;
+    document.getElementById('op_pieza').checked = true;
+    document.getElementById('t_setup').value = 10;
+    document.getElementById('t_cilin').value = 30;
+    document.getElementById('t_pieza').value = 40;
+    document.getElementById('desc').value = 'Eje / vastago';
+  } else if(tipo === 'buje'){
+    document.getElementById('op_setup').checked = true;
+    document.getElementById('op_cilin').checked = true;
+    document.getElementById('op_talad').checked = true;
+    document.getElementById('t_setup').value = 10;
+    document.getElementById('t_cilin').value = 20;
+    document.getElementById('t_talad').value = 15;
+    document.getElementById('desc').value = 'Buje / casquillo';
+  } else if(tipo === 'rosca'){
+    document.getElementById('op_setup').checked = true;
+    document.getElementById('op_cilin').checked = true;
+    document.getElementById('op_rosca').checked = true;
+    document.getElementById('t_setup').value = 10;
+    document.getElementById('t_cilin').value = 20;
+    document.getElementById('t_rosca').value = 25;
+    document.getElementById('desc').value = 'Pieza roscada';
+  } else if(tipo === 'acabado'){
+    document.getElementById('op_setup').checked = true;
+    document.getElementById('op_acab').checked = true;
+    document.getElementById('t_setup').value = 5;
+    document.getElementById('t_acab').value = 20;
+    document.getElementById('desc').value = 'Acabado / pulido';
+  } else if(tipo === 'taladro'){
+    document.getElementById('op_setup').checked = true;
+    document.getElementById('op_talad').checked = true;
+    document.getElementById('t_setup').value = 5;
+    document.getElementById('t_talad').value = 20;
+    document.getElementById('desc').value = 'Taladrado / mandrinado';
+  }
+  calc();
+}
+
+// COMPARTIR POR WHATSAPP
+function compartirWhatsApp(){
+  if(!window._pres) return;
+  var d = window._pres;
+  var r = d.r;
+  var texto = 'Presupuesto DXFMotorsport ' + d.num + '\n';
+  texto += 'Fecha: ' + d.fecha + '\n\n';
+  texto += 'Trabajo: ' + d.desc + '\n';
+  texto += 'Material: ' + d.mat + '\n';
+  texto += 'Cantidad: ' + r.cant + ' ud\n\n';
+  texto += 'Base imponible: ' + r.total.toFixed(2) + ' EU\n';
+  texto += 'IVA 21%: ' + (r.total*IVA).toFixed(2) + ' EU\n';
+  texto += 'TOTAL: ' + r.tiva.toFixed(2) + ' EU\n\n';
+  if(Number(d.ant)===0){
+    texto += 'Pago unico a la entrega\n';
+  } else if(Number(d.ant)===100){
+    texto += 'Pago unico por adelantado\n';
+  } else {
+    texto += 'Anticipo (' + d.ant + '%): ' + (r.tiva*d.ant/100).toFixed(2) + ' EU\n';
+    texto += 'Resto a la entrega: ' + (r.tiva*(1-d.ant/100)).toFixed(2) + ' EU\n';
+  }
+  texto += '\nValido ' + d.validez + ' dias. Plazo: ' + d.plazo;
+  var url = 'https://wa.me/?text=' + encodeURIComponent(texto);
+  window.open(url, '_blank');
+}
+
+cargarAjustes();
 calc();
 </script>
 </body>
