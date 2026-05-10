@@ -667,7 +667,19 @@ function guardarYGenerar(){
   var antEl=document.getElementById('anticipo'); var ant=antEl.valueAsNumber; if(isNaN(ant)) ant=parseFloat(antEl.value); if(isNaN(ant)||antEl.value==='') ant=50;
   var num='DXF-'+(numP<10?'00':numP<100?'0':'')+numP;
   var fecha=new Date().toLocaleDateString('es-ES',{day:'numeric',month:'long',year:'numeric'});
-  historial.unshift({num:num,fecha:fecha,desc:desc,mat:mat,cant:r.cant,total:r.tiva.toFixed(2),cli:cli,urg:r.urg,fh:r.fh,serie:r.dto.pct>0});
+  historial.unshift({
+    num:num, fecha:fecha, desc:desc, mat:mat, cant:r.cant,
+    total:r.tiva.toFixed(2), cli:cli, urg:r.urg, fh:r.fh, serie:r.dto.pct>0,
+    // Snapshot completo para poder regenerar el presupuesto
+    snap:{
+      r:{pvp_h:r.pvp_h,unit:r.unit,iva_ud:r.iva_ud,unit_iva:r.uiva,cant:r.cant,
+         total:r.total,tiva:r.tiva,dto:{pct:r.dto.pct,label:r.dto.label},
+         dto_eur:r.de,urg:r.urg,fh:r.fh,re:r.re},
+      cll:cll, mat:mat, plazo:plazo, validez:validez, ant:antFinal,
+      totalMins:totalMins, ops:ops, extras:extras, notas:notas,
+      dtoRow:dtoRow, urgRow:urgRow, fhRow:fhRow, notasHtml:notasHtml
+    }
+  });
   numP++;
   // Guardar historial en localStorage (max 50 entradas)
   try {
@@ -882,13 +894,17 @@ function abrirModal(idx){
     var total = pres.reduce(function(s,h){ return s+parseFloat(h.total||0); }, 0);
     presDiv.innerHTML = '<div style="font-size:10px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">Presupuestos ('+pres.length+') — Total facturado: <span style="color:#185FA5">'+total.toFixed(2)+' €</span></div>'
       + pres.map(function(h){
+          var hidx = historial.indexOf(h);
           return '<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 10px;background:#f8f8f8;border-radius:8px;margin-bottom:5px;font-size:12px">'
-            +'<div><span style="font-weight:600;color:#185FA5">'+h.num+'</span>'
+            +'<div style="flex:1;min-width:0"><span style="font-weight:600;color:#185FA5">'+h.num+'</span>'
             +(h.urg?' <span style="font-size:9px;background:#FAEEDA;color:#633806;padding:1px 5px;border-radius:99px">urgente</span>':'')
             +(h.fh?' <span style="font-size:9px;background:#FCEBEB;color:#791F1F;padding:1px 5px;border-radius:99px">f.horario</span>':'')
             +(h.serie?' <span style="font-size:9px;background:#EAF3DE;color:#27500A;padding:1px 5px;border-radius:99px">serie</span>':'')
             +'<div style="color:#888;margin-top:2px">'+h.fecha+' · '+h.desc+'</div></div>'
+            +'<div style="display:flex;align-items:center;gap:8px;flex-shrink:0">'
             +'<div style="font-weight:700;color:#1a1a1a">'+h.total+' €</div>'
+            +'<button class="btn sm" onclick="verPresupuestoHistorial('+hidx+')" style="background:#185FA5;color:#fff;border-color:#185FA5;padding:4px 10px">Ver</button>'
+            +'</div>'
             +'</div>';
         }).join('');
     presDiv.style.display='block';
@@ -897,6 +913,41 @@ function abrirModal(idx){
     presDiv.style.display='block';
   }
   document.getElementById('modal_cli').style.display='block';
+}
+
+function verPresupuestoHistorial(idx){
+  var h = historial[idx];
+  if(!h || !h.snap){
+    alert('Este presupuesto fue generado con una version anterior y no puede recuperarse. Genera uno nuevo.');
+    return;
+  }
+  // Reconstruir _pres desde el snapshot
+  var s = h.snap;
+  window._pres = {
+    r: s.r,
+    num: h.num,
+    fecha: h.fecha,
+    cli: h.cli,
+    cll: s.cll,
+    desc: h.desc,
+    mat: h.mat,
+    plazo: s.plazo,
+    validez: s.validez,
+    ant: s.ant,
+    totalMins: s.totalMins,
+    ops: s.ops,
+    extras: s.extras,
+    notas: s.notas,
+    dtoRow: s.dtoRow,
+    urgRow: s.urgRow,
+    fhRow: s.fhRow,
+    notasHtml: s.notasHtml
+  };
+  document.getElementById('pres_render').innerHTML = buildPres();
+  document.getElementById('pres_empty').style.display = 'none';
+  document.getElementById('pres_content').style.display = 'block';
+  cerrarModal();
+  switchTab('presupuesto');
 }
 
 function cerrarModal(){
