@@ -588,6 +588,11 @@ function guardarYGenerar(){
   var fecha=new Date().toLocaleDateString('es-ES',{day:'numeric',month:'long',year:'numeric'});
   historial.unshift({num:num,fecha:fecha,desc:desc,mat:mat,cant:r.cant,total:r.tiva.toFixed(2),cli:cli,urg:r.urg,fh:r.fh,serie:r.dto.pct>0});
   numP++;
+  // Guardar historial en localStorage (max 50 entradas)
+  try {
+    localStorage.setItem('dxf_historial', JSON.stringify(historial.slice(0,50)));
+    localStorage.setItem('dxf_nump', numP);
+  } catch(e) {}
   var tm=0; for(var i=0;i<OPS.length;i++) if(ch(OPS[i])) tm+=n('t_'+OPS[i]);
   var ops=[]; for(var i=0;i<OPS.length;i++) if(ch(OPS[i])) ops.push('- '+document.querySelector('label[for=op_'+OPS[i]+']').textContent+' ('+n('t_'+OPS[i])+' min)');
   var extras=r.urg?' (URGENTE +25%)':r.fh?' (FUERA HORARIO +50%)':'';
@@ -657,7 +662,15 @@ function renderHist(){
   }
   l.innerHTML=html;
 }
-function limpiarHist(){historial=[];renderHist();}
+function limpiarHist(){
+  historial=[];
+  numP=1;
+  try {
+    localStorage.removeItem('dxf_historial');
+    localStorage.removeItem('dxf_nump');
+  } catch(e) {}
+  renderHist();
+}
 
 // AJUSTES PERSISTENTES - cargar al inicio
 function cargarAjustes(){
@@ -669,6 +682,13 @@ function cargarAjustes(){
   if(margen) document.getElementById('margen').value = margen;
   if(minimo) document.getElementById('minimo').value = minimo;
   if(minimo_mat) document.getElementById('minimo_mat').value = minimo_mat;
+  // Cargar historial guardado
+  try {
+    var h = localStorage.getItem('dxf_historial');
+    var p = localStorage.getItem('dxf_nump');
+    if(h) historial = JSON.parse(h);
+    if(p) numP = parseInt(p);
+  } catch(e) { historial=[]; numP=1; }
 }
 
 function guardarAjustes(){
