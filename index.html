@@ -536,7 +536,7 @@ function guardarYGenerar(){
   var clv=document.getElementById('cli_vehiculo').value;
   var plazo=document.getElementById('plazo').value||'A convenir';
   var validez=n('validez')||30;
-  var antVal=document.getElementById('anticipo').value; var ant=(antVal===''||antVal===null)?50:Number(antVal);
+  var antEl=document.getElementById('anticipo'); var ant=antEl.valueAsNumber; if(isNaN(ant)) ant=parseFloat(antEl.value); if(isNaN(ant)||antEl.value==='') ant=50;
   var num='DXF-'+(numP<10?'00':numP<100?'0':'')+numP;
   var fecha=new Date().toLocaleDateString('es-ES',{day:'numeric',month:'long',year:'numeric'});
   historial.unshift({num:num,fecha:fecha,desc:desc,mat:mat,cant:r.cant,total:r.tiva.toFixed(2),cli:cli,urg:r.urg,fh:r.fh,serie:r.dto.pct>0});
@@ -549,7 +549,7 @@ function guardarYGenerar(){
   if(cld) cll.push(cld);
   if(clc) cll.push(clc);
   if(clv) cll.push('Vehiculo: '+clv);
-  window._pres={r:r,num:num,fecha:fecha,cli:cli,cll:cll,desc:desc,mat:mat,plazo:plazo,validez:validez,ant:ant,tm:tm,ops:ops,extras:extras,notas:notas};
+  var antFinal=Number(ant); window._pres={r:r,num:num,fecha:fecha,cli:cli,cll:cll,desc:desc,mat:mat,plazo:plazo,validez:validez,ant:antFinal,tm:tm,ops:ops,extras:extras,notas:notas};
   document.getElementById('pres_render').innerHTML=buildPres();
   document.getElementById('pres_empty').style.display='none';
   document.getElementById('pres_content').style.display='block';
@@ -574,18 +574,18 @@ function buildPres(){
   +'<tr class="fin"><td></td><td>TOTAL CON IVA</td><td class="r">'+r.tiva.toFixed(2)+' Eu</td></tr></table>'
   +'<div class="ptit" style="margin-top:12px">Forma de pago</div>'
   +'<div class="ppay">'
-  +(Number(d.ant)===0
+  +(Number(d.ant)===0||d.ant===0||d.ant==='0'
     ? '<div class="ppay-box" style="flex:2"><div class="ppay-label">Pago unico a la entrega</div><div class="ppay-val">'+r.tiva.toFixed(2)+'</div></div><div class="ppay-box"><div class="ppay-label">Total IVA incluido</div><div class="ppay-val">'+r.tiva.toFixed(2)+'</div></div>'
     : Number(d.ant)===100
     ? '<div class="ppay-box" style="flex:2"><div class="ppay-label">Pago unico por adelantado</div><div class="ppay-val">'+r.tiva.toFixed(2)+'</div></div><div class="ppay-box"><div class="ppay-label">Total IVA incluido</div><div class="ppay-val">'+r.tiva.toFixed(2)+'</div></div>'
     : '<div class="ppay-box"><div class="ppay-label">Anticipo ('+d.ant+'%)</div><div class="ppay-val">'+( r.tiva*d.ant/100).toFixed(2)+'</div></div><div class="ppay-box"><div class="ppay-label">Resto ('+(100-d.ant)+'%)</div><div class="ppay-val">'+( r.tiva*(1-d.ant/100)).toFixed(2)+'</div></div><div class="ppay-box"><div class="ppay-label">Total IVA incl.</div><div class="ppay-val">'+r.tiva.toFixed(2)+'</div></div>'
   )
   +'</div>'
-  +(Number(d.ant)===0
+  +(Number(d.ant)===0||d.ant===0||d.ant==='0'
     ? '+'+'<div class="pcond">Validez: '+d.validez+' dias. Plazo: '+d.plazo+'. Pago: unico a la entrega. IVA 21% incluido.</div>'
     : Number(d.ant)===100
     ? '+'+'<div class="pcond">Validez: '+d.validez+' dias. Plazo: '+d.plazo+'. Pago: unico por adelantado. IVA 21% incluido.</div>'
-    : '+'+(Number(d.ant)===0?'<div class="pcond">Validez: '+d.validez+' dias. Plazo: '+d.plazo+'. Pago: unico a la entrega. IVA 21% incluido.</div>':Number(d.ant)===100?'<div class="pcond">Validez: '+d.validez+' dias. Plazo: '+d.plazo+'. Pago: unico por adelantado. IVA 21% incluido.</div>':'<div class="pcond">Validez: '+d.validez+' dias. Plazo: '+d.plazo+'. Pago: '+d.ant+'% anticipo + '+(100-d.ant)+'% entrega. IVA 21% incluido.</div>')
+    : '+'+(Number(d.ant)===0||d.ant===0||d.ant==='0'?'<div class="pcond">Validez: '+d.validez+' dias. Plazo: '+d.plazo+'. Pago: unico a la entrega. IVA 21% incluido.</div>':Number(d.ant)===100||d.ant===100||d.ant==='100'?'<div class="pcond">Validez: '+d.validez+' dias. Plazo: '+d.plazo+'. Pago: unico por adelantado. IVA 21% incluido.</div>':'<div class="pcond">Validez: '+d.validez+' dias. Plazo: '+d.plazo+'. Pago: '+d.ant+'% anticipo + '+(100-d.ant)+'% entrega. IVA 21% incluido.</div>')
   )
   +'<div class="pfooter"><div><div class="pfl"></div><div class="pfl-label">Firma - DXFMotorsport</div></div>'
   +'<div class="pfi">DXFMotorsport · dxfmotorsport.com<br>'+d.num+' · '+d.fecha+'</div></div>';
