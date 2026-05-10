@@ -497,6 +497,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-siz
       <div class="field"><label>Vehiculo</label><input type="text" id="ec_veh"></div>
     </div>
     <div class="field" style="margin-bottom:14px"><label>Notas</label><textarea id="ec_notas" style="min-height:48px"></textarea></div>
+    <div id="ec_presupuestos" style="display:none;margin-bottom:14px;padding:12px;background:#f0f4ff;border-radius:10px;max-height:220px;overflow-y:auto"></div>
     <div class="btn-row">
       <button class="btn primary" onclick="actualizarCliente()">Guardar cambios</button>
       <button class="btn" style="background:#FCEBEB;color:#791F1F;border-color:#A32D2D" onclick="eliminarCliente()">Eliminar</button>
@@ -874,6 +875,27 @@ function abrirModal(idx){
   document.getElementById('ec_dir').value = c.dir||'';
   document.getElementById('ec_veh').value = c.veh||'';
   document.getElementById('ec_notas').value = c.notas||'';
+  // Mostrar presupuestos del cliente
+  var pres = historial.filter(function(h){ return h.cli===c.nombre; });
+  var presDiv = document.getElementById('ec_presupuestos');
+  if(pres.length){
+    var total = pres.reduce(function(s,h){ return s+parseFloat(h.total||0); }, 0);
+    presDiv.innerHTML = '<div style="font-size:10px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">Presupuestos ('+pres.length+') — Total facturado: <span style="color:#185FA5">'+total.toFixed(2)+' €</span></div>'
+      + pres.map(function(h){
+          return '<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 10px;background:#f8f8f8;border-radius:8px;margin-bottom:5px;font-size:12px">'
+            +'<div><span style="font-weight:600;color:#185FA5">'+h.num+'</span>'
+            +(h.urg?' <span style="font-size:9px;background:#FAEEDA;color:#633806;padding:1px 5px;border-radius:99px">urgente</span>':'')
+            +(h.fh?' <span style="font-size:9px;background:#FCEBEB;color:#791F1F;padding:1px 5px;border-radius:99px">f.horario</span>':'')
+            +(h.serie?' <span style="font-size:9px;background:#EAF3DE;color:#27500A;padding:1px 5px;border-radius:99px">serie</span>':'')
+            +'<div style="color:#888;margin-top:2px">'+h.fecha+' · '+h.desc+'</div></div>'
+            +'<div style="font-weight:700;color:#1a1a1a">'+h.total+' €</div>'
+            +'</div>';
+        }).join('');
+    presDiv.style.display='block';
+  } else {
+    presDiv.innerHTML='<div style="font-size:12px;color:#aaa;padding:8px 0">Sin presupuestos registrados</div>';
+    presDiv.style.display='block';
+  }
   document.getElementById('modal_cli').style.display='block';
 }
 
