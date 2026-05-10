@@ -574,18 +574,18 @@ function buildPres(){
   +'<tr class="fin"><td></td><td>TOTAL CON IVA</td><td class="r">'+r.tiva.toFixed(2)+' Eu</td></tr></table>'
   +'<div class="ptit" style="margin-top:12px">Forma de pago</div>'
   +'<div class="ppay">'
-  +(d.ant===0
+  +(Number(d.ant)===0
     ? '<div class="ppay-box" style="flex:2"><div class="ppay-label">Pago unico a la entrega</div><div class="ppay-val">'+r.tiva.toFixed(2)+'</div></div><div class="ppay-box"><div class="ppay-label">Total IVA incluido</div><div class="ppay-val">'+r.tiva.toFixed(2)+'</div></div>'
-    : d.ant===100
+    : Number(d.ant)===100
     ? '<div class="ppay-box" style="flex:2"><div class="ppay-label">Pago unico por adelantado</div><div class="ppay-val">'+r.tiva.toFixed(2)+'</div></div><div class="ppay-box"><div class="ppay-label">Total IVA incluido</div><div class="ppay-val">'+r.tiva.toFixed(2)+'</div></div>'
     : '<div class="ppay-box"><div class="ppay-label">Anticipo ('+d.ant+'%)</div><div class="ppay-val">'+( r.tiva*d.ant/100).toFixed(2)+'</div></div><div class="ppay-box"><div class="ppay-label">Resto ('+(100-d.ant)+'%)</div><div class="ppay-val">'+( r.tiva*(1-d.ant/100)).toFixed(2)+'</div></div><div class="ppay-box"><div class="ppay-label">Total IVA incl.</div><div class="ppay-val">'+r.tiva.toFixed(2)+'</div></div>'
   )
   +'</div>'
-  +(d.ant===0
+  +(Number(d.ant)===0
     ? '+'+'<div class="pcond">Validez: '+d.validez+' dias. Plazo: '+d.plazo+'. Pago: unico a la entrega. IVA 21% incluido.</div>'
-    : d.ant===100
+    : Number(d.ant)===100
     ? '+'+'<div class="pcond">Validez: '+d.validez+' dias. Plazo: '+d.plazo+'. Pago: unico por adelantado. IVA 21% incluido.</div>'
-    : '+'+'<div class="pcond">Validez: '+d.validez+' dias. Plazo: '+d.plazo+'. Pago: '+d.ant+'% anticipo + '+(100-d.ant)+'% entrega. IVA 21% incluido.</div>'
+    : '+'+(Number(d.ant)===0?'<div class="pcond">Validez: '+d.validez+' dias. Plazo: '+d.plazo+'. Pago: unico a la entrega. IVA 21% incluido.</div>':Number(d.ant)===100?'<div class="pcond">Validez: '+d.validez+' dias. Plazo: '+d.plazo+'. Pago: unico por adelantado. IVA 21% incluido.</div>':'<div class="pcond">Validez: '+d.validez+' dias. Plazo: '+d.plazo+'. Pago: '+d.ant+'% anticipo + '+(100-d.ant)+'% entrega. IVA 21% incluido.</div>')
   )
   +'<div class="pfooter"><div><div class="pfl"></div><div class="pfl-label">Firma - DXFMotorsport</div></div>'
   +'<div class="pfi">DXFMotorsport · dxfmotorsport.com<br>'+d.num+' · '+d.fecha+'</div></div>';
