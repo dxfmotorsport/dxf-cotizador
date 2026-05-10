@@ -670,14 +670,13 @@ function guardarYGenerar(){
   historial.unshift({
     num:num, fecha:fecha, desc:desc, mat:mat, cant:r.cant,
     total:r.tiva.toFixed(2), cli:cli, urg:r.urg, fh:r.fh, serie:r.dto.pct>0,
-    // Snapshot completo para poder regenerar el presupuesto
+    // Snapshot para regenerar presupuesto
     snap:{
-      r:{pvp_h:r.pvp_h,unit:r.unit,iva_ud:r.iva_ud,unit_iva:r.uiva,cant:r.cant,
-         total:r.total,tiva:r.tiva,dto:{pct:r.dto.pct,label:r.dto.label},
-         dto_eur:r.de,urg:r.urg,fh:r.fh,re:r.re},
+      r:{pvp:r.pvp,unit:r.unit,cant:r.cant,total:r.total,tiva:r.tiva,
+         de:r.de,re:r.re,urg:r.urg,fh:r.fh,
+         dto:{pct:r.dto.pct,label:r.dto.label}},
       cll:cll, mat:mat, plazo:plazo, validez:validez, ant:antFinal,
-      totalMins:totalMins, ops:ops, extras:extras, notas:notas,
-      dtoRow:dtoRow, urgRow:urgRow, fhRow:fhRow, notasHtml:notasHtml
+      tm:totalMins, ops:ops, notas:notas
     }
   });
   numP++;
@@ -923,25 +922,32 @@ function verPresupuestoHistorial(idx){
   }
   // Reconstruir _pres desde el snapshot
   var s = h.snap;
+  // Reconstruir filas HTML desde los datos del snapshot
+  var sr = s.r;
+  var sdtoRow = sr.dto.pct>0?'<tr><td colspan="2" style="color:#27500A">Descuento '+sr.dto.label+'</td><td class="r" style="color:#27500A">-'+sr.de.toFixed(2)+' EU</td></tr>':'';
+  var surgRow = sr.urg?'<tr><td colspan="2" style="color:#BA7517">Recargo urgencia (+25%)</td><td class="r" style="color:#BA7517">+'+sr.re.toFixed(2)+' EU</td></tr>':'';
+  var sfhRow  = sr.fh?'<tr><td colspan="2" style="color:#A32D2D">Recargo fuera horario (+50%)</td><td class="r" style="color:#A32D2D">+'+sr.re.toFixed(2)+' EU</td></tr>':'';
+  var sextras = sr.urg?' <b style="color:#BA7517">URGENTE +25%</b>':sr.fh?' <b style="color:#A32D2D">FUERA HORARIO +50%</b>':'';
+  var snotasHtml = s.notas?'<div style="margin-top:5px;font-size:10px;color:#777"><b>Nota:</b> '+s.notas+'</div>':'';
   window._pres = {
-    r: s.r,
+    r: sr,
     num: h.num,
     fecha: h.fecha,
     cli: h.cli,
     cll: s.cll,
     desc: h.desc,
-    mat: h.mat,
+    mat: s.mat,
     plazo: s.plazo,
     validez: s.validez,
     ant: s.ant,
-    totalMins: s.totalMins,
+    tm: s.tm,
     ops: s.ops,
-    extras: s.extras,
+    extras: sextras,
     notas: s.notas,
-    dtoRow: s.dtoRow,
-    urgRow: s.urgRow,
-    fhRow: s.fhRow,
-    notasHtml: s.notasHtml
+    dtoRow: sdtoRow,
+    urgRow: surgRow,
+    fhRow: sfhRow,
+    notasHtml: snotasHtml
   };
   document.getElementById('pres_render').innerHTML = buildPres();
   document.getElementById('pres_empty').style.display = 'none';
