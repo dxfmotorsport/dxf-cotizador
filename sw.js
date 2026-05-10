@@ -1,4 +1,4 @@
-const VERSION = '1.0.0';
+const VERSION = '1.0.1';
 const CACHE = 'dxf-cache-' + VERSION;
 const FILES = ['./index.html', './manifest.json', './apple-touch-icon.png', './icon-192.png', './icon-512.png'];
 
