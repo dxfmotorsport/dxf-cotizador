@@ -172,6 +172,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-siz
   <button class="nav-btn" onclick="switchTab('resultado')"><span class="ico">&#128202;</span>Resultado</button>
   <button class="nav-btn" onclick="switchTab('rentabilidad')"><span class="ico">&#128200;</span>Rentab.</button>
   <button class="nav-btn" onclick="switchTab('historial')"><span class="ico">&#128193;</span>Historial</button>
+  <button class="nav-btn" onclick="switchTab('clientes')"><span class="ico">&#128101;</span>Clientes</button>
   <button class="nav-btn" onclick="switchTab('presupuesto')"><span class="ico">&#128196;</span>PDF</button>
 </nav>
 
@@ -233,6 +234,15 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-siz
       <div class="field"><label>Vehiculo</label><input type="text" id="cli_vehiculo" placeholder="Peugeot 208 Rally4"></div>
     </div>
     <div class="field"><label>Direccion</label><input type="text" id="cli_dir" placeholder="Calle Mayor 12, Ferrol"></div>
+  </div>
+  <div class="card" style="background:#EAF3DE;border:1px solid #c3e6c3">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <span style="font-size:12px;color:#27500A">Cargar o guardar cliente en la base de datos</span>
+      <div style="display:flex;gap:8px">
+        <button class="btn sm" style="background:#185FA5;color:#fff;border-color:#185FA5" onclick="switchTab('clientes')">Ver clientes</button>
+        <button class="btn sm" style="background:#27500A;color:#fff;border-color:#27500A" onclick="guardarDesdeFormulario()">Guardar este cliente</button>
+      </div>
+    </div>
   </div>
   <div class="card">
     <div class="card-title">Condiciones</div>
@@ -434,6 +444,67 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-siz
 </div>
 
 </div><!-- /layout -->
+
+<!-- TAB CLIENTES -->
+<div id="tab-clientes" class="panel" style="display:none;padding:14px">
+  <div class="card">
+    <div class="card-title">Nuevo cliente</div>
+    <div class="g2" style="margin-bottom:10px">
+      <div class="field"><label>Nombre / empresa *</label><input type="text" id="nc_nombre" placeholder="Equipo Galicia Rally"></div>
+      <div class="field"><label>Telefono</label><input type="text" id="nc_tel" placeholder="612 345 678"></div>
+    </div>
+    <div class="g2" style="margin-bottom:10px">
+      <div class="field"><label>Email</label><input type="text" id="nc_email" placeholder="cliente@email.com"></div>
+      <div class="field"><label>NIF / CIF</label><input type="text" id="nc_nif" placeholder="12345678A"></div>
+    </div>
+    <div class="g2" style="margin-bottom:10px">
+      <div class="field"><label>Direccion</label><input type="text" id="nc_dir" placeholder="Calle Mayor 12, Ferrol"></div>
+      <div class="field"><label>Vehiculo / competicion</label><input type="text" id="nc_veh" placeholder="Peugeot 208 Rally4"></div>
+    </div>
+    <div class="field" style="margin-bottom:10px"><label>Notas</label><textarea id="nc_notas" placeholder="Observaciones..." style="min-height:48px"></textarea></div>
+    <div class="btn-row">
+      <button class="btn primary" onclick="guardarCliente()">Guardar cliente</button>
+      <button class="btn" onclick="limpiarFormCliente()">Limpiar</button>
+    </div>
+    <div id="nc_msg" style="display:none;margin-top:8px;padding:8px 12px;border-radius:8px;font-size:12px"></div>
+  </div>
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <div class="card-title" style="margin-bottom:0">Clientes guardados (<span id="cli_count">0</span>)</div>
+      <input type="text" id="cli_buscar" placeholder="Buscar..." oninput="renderClientes()" style="width:130px;padding:5px 8px;font-size:12px;border:1px solid #ddd;border-radius:6px;background:#fff">
+    </div>
+    <div id="cli_lista"><div class="empty">Aun no hay clientes guardados</div></div>
+  </div>
+</div>
+
+<!-- MODAL EDITAR -->
+<div id="modal_cli" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.55);z-index:9999;overflow-y:auto;-webkit-overflow-scrolling:touch">
+  <div style="background:#fff;border-radius:14px;padding:20px;margin:20px auto;max-width:480px;position:relative">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+      <span style="font-weight:700;font-size:15px">Editar cliente</span>
+      <button onclick="cerrarModal()" style="border:none;background:#f0f0f0;border-radius:50%;width:30px;height:30px;font-size:18px;cursor:pointer;line-height:1">&times;</button>
+    </div>
+    <div class="g2" style="margin-bottom:10px">
+      <div class="field"><label>Nombre / empresa *</label><input type="text" id="ec_nombre"></div>
+      <div class="field"><label>Telefono</label><input type="text" id="ec_tel"></div>
+    </div>
+    <div class="g2" style="margin-bottom:10px">
+      <div class="field"><label>Email</label><input type="text" id="ec_email"></div>
+      <div class="field"><label>NIF / CIF</label><input type="text" id="ec_nif"></div>
+    </div>
+    <div class="g2" style="margin-bottom:10px">
+      <div class="field"><label>Direccion</label><input type="text" id="ec_dir"></div>
+      <div class="field"><label>Vehiculo</label><input type="text" id="ec_veh"></div>
+    </div>
+    <div class="field" style="margin-bottom:14px"><label>Notas</label><textarea id="ec_notas" style="min-height:48px"></textarea></div>
+    <div class="btn-row">
+      <button class="btn primary" onclick="actualizarCliente()">Guardar cambios</button>
+      <button class="btn" style="background:#FCEBEB;color:#791F1F;border-color:#A32D2D" onclick="eliminarCliente()">Eliminar</button>
+      <button class="btn" onclick="cerrarModal()">Cancelar</button>
+    </div>
+  </div>
+</div>
+
 <script>
 var OPS=['setup','cilin','rosca','talad','pieza','acab'];
 var FIJOS=139,HORAS_BASE=80,IVA=0.21;
@@ -441,12 +512,21 @@ var historial=[],numP=1;
 var LOGO=document.getElementById('toplogo').src;
 
 function switchTab(id){
-  var tabs=['costes','cliente','trabajo','resultado','rentabilidad','historial','presupuesto'];
+  var tabs=['costes','cliente','trabajo','resultado','rentabilidad','historial','presupuesto','clientes'];
   var btns=document.querySelectorAll('.nav-btn');
   for(var i=0;i<btns.length;i++) btns[i].classList.toggle('active',tabs[i]===id);
   var panels=document.querySelectorAll('.panel');
   for(var i=0;i<panels.length;i++) panels[i].classList.remove('active');
-  document.getElementById('tab-'+id).classList.add('active');
+  // Handle clientes tab separately (not in layout)
+  if(id==='clientes'){
+    document.getElementById('tab-clientes').style.display='block';
+    document.querySelector('.layout').style.display='none';
+    renderClientes();
+  } else {
+    document.getElementById('tab-clientes').style.display='none';
+    document.querySelector('.layout').style.display='';
+    document.getElementById('tab-'+id).classList.add('active');
+  }
   if(id==='rentabilidad') simular();
   if(id==='historial') renderHist();
   document.querySelector('.layout').scrollTop=0;
@@ -672,6 +752,165 @@ function limpiarHist(){
   renderHist();
 }
 
+// BASE DE CLIENTES
+var clientes = [];
+var clienteEditandoIdx = -1;
+
+function cargarClientes(){
+  try {
+    var c = localStorage.getItem('dxf_clientes');
+    if(c) clientes = JSON.parse(c);
+  } catch(e){ clientes=[]; }
+}
+
+function guardarClientesLS(){
+  try { localStorage.setItem('dxf_clientes', JSON.stringify(clientes)); } catch(e){}
+}
+
+function guardarCliente(){
+  var nombre = document.getElementById('nc_nombre').value.trim();
+  if(!nombre){ mostrarMsg('nc_msg','El nombre es obligatorio','#FCEBEB','#791F1F'); return; }
+  var cli = {
+    id: Date.now(),
+    nombre: nombre,
+    tel: document.getElementById('nc_tel').value.trim(),
+    email: document.getElementById('nc_email').value.trim(),
+    nif: document.getElementById('nc_nif').value.trim(),
+    dir: document.getElementById('nc_dir').value.trim(),
+    veh: document.getElementById('nc_veh').value.trim(),
+    notas: document.getElementById('nc_notas').value.trim(),
+    fecha: new Date().toLocaleDateString('es-ES')
+  };
+  clientes.unshift(cli);
+  guardarClientesLS();
+  limpiarFormCliente();
+  mostrarMsg('nc_msg','Cliente guardado correctamente','#EAF3DE','#27500A');
+  setTimeout(function(){ document.getElementById('nc_msg').style.display='none'; }, 2500);
+  renderClientes();
+}
+
+function guardarDesdeFormulario(){
+  var nombre = document.getElementById('cli_nombre').value.trim();
+  if(!nombre){ alert('Introduce primero el nombre del cliente'); return; }
+  var cli = {
+    id: Date.now(),
+    nombre: nombre,
+    tel: document.getElementById('cli_contacto').value.trim(),
+    email: '',
+    nif: document.getElementById('cli_nif').value.trim(),
+    dir: document.getElementById('cli_dir').value.trim(),
+    veh: document.getElementById('cli_vehiculo').value.trim(),
+    notas: '',
+    fecha: new Date().toLocaleDateString('es-ES')
+  };
+  // Check if already exists
+  var existe = clientes.find(function(c){ return c.nombre===nombre; });
+  if(existe){ if(!confirm('Ya existe un cliente con ese nombre. Crear de todas formas?')) return; }
+  clientes.unshift(cli);
+  guardarClientesLS();
+  alert('Cliente guardado en la base de datos');
+}
+
+function limpiarFormCliente(){
+  ['nc_nombre','nc_tel','nc_email','nc_nif','nc_dir','nc_veh','nc_notas'].forEach(function(id){
+    document.getElementById(id).value='';
+  });
+}
+
+function mostrarMsg(id, txt, bg, color){
+  var el = document.getElementById(id);
+  el.style.display='block';
+  el.style.background=bg;
+  el.style.color=color;
+  el.textContent=txt;
+}
+
+function renderClientes(){
+  var buscar = (document.getElementById('cli_buscar')||{value:''}).value.toLowerCase();
+  var filtrados = clientes.filter(function(c){
+    return c.nombre.toLowerCase().includes(buscar) ||
+           (c.tel||'').includes(buscar) ||
+           (c.email||'').toLowerCase().includes(buscar) ||
+           (c.veh||'').toLowerCase().includes(buscar);
+  });
+  document.getElementById('cli_count').textContent = clientes.length;
+  var l = document.getElementById('cli_lista');
+  if(!filtrados.length){ l.innerHTML='<div class="empty">'+(buscar?'Sin resultados':'Aun no hay clientes')+'</div>'; return; }
+  l.innerHTML = filtrados.map(function(c, i){
+    var idx = clientes.indexOf(c);
+    var pres = historial.filter(function(h){ return h.cli===c.nombre; }).length;
+    return '<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #f0f0f0">'
+      +'<div style="width:38px;height:38px;border-radius:50%;background:#185FA5;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;flex-shrink:0">'+c.nombre.charAt(0).toUpperCase()+'</div>'
+      +'<div style="flex:1;min-width:0">'
+        +'<div style="font-weight:600;font-size:13px">'+c.nombre+'</div>'
+        +'<div style="font-size:11px;color:#888;margin-top:2px">'+(c.tel?c.tel:'')+(c.tel&&c.veh?' · ':' ')+(c.veh?c.veh:'')+'</div>'
+        +(pres>0?'<div style="font-size:10px;color:#185FA5;margin-top:2px">'+pres+' presupuesto'+(pres>1?'s':'')+'</div>':'')
+      +'</div>'
+      +'<div style="display:flex;gap:6px;flex-shrink:0">'
+        +'<button class="btn sm" onclick="usarCliente('+idx+')" style="background:#EAF3DE;color:#27500A;border-color:#27500A">Usar</button>'
+        +'<button class="btn sm" onclick="abrirModal('+idx+')">Editar</button>'
+      +'</div>'
+      +'</div>';
+  }).join('');
+}
+
+function usarCliente(idx){
+  var c = clientes[idx];
+  document.getElementById('cli_nombre').value = c.nombre||'';
+  document.getElementById('cli_contacto').value = c.tel||'';
+  document.getElementById('cli_nif').value = c.nif||'';
+  document.getElementById('cli_dir').value = c.dir||'';
+  document.getElementById('cli_vehiculo').value = c.veh||'';
+  switchTab('cliente');
+}
+
+function abrirModal(idx){
+  clienteEditandoIdx = idx;
+  var c = clientes[idx];
+  document.getElementById('ec_nombre').value = c.nombre||'';
+  document.getElementById('ec_tel').value = c.tel||'';
+  document.getElementById('ec_email').value = c.email||'';
+  document.getElementById('ec_nif').value = c.nif||'';
+  document.getElementById('ec_dir').value = c.dir||'';
+  document.getElementById('ec_veh').value = c.veh||'';
+  document.getElementById('ec_notas').value = c.notas||'';
+  document.getElementById('modal_cli').style.display='block';
+}
+
+function cerrarModal(){
+  document.getElementById('modal_cli').style.display='none';
+  clienteEditandoIdx=-1;
+}
+
+function actualizarCliente(){
+  if(clienteEditandoIdx<0) return;
+  var nombre = document.getElementById('ec_nombre').value.trim();
+  if(!nombre){ alert('El nombre es obligatorio'); return; }
+  clientes[clienteEditandoIdx] = {
+    id: clientes[clienteEditandoIdx].id,
+    nombre: nombre,
+    tel: document.getElementById('ec_tel').value.trim(),
+    email: document.getElementById('ec_email').value.trim(),
+    nif: document.getElementById('ec_nif').value.trim(),
+    dir: document.getElementById('ec_dir').value.trim(),
+    veh: document.getElementById('ec_veh').value.trim(),
+    notas: document.getElementById('ec_notas').value.trim(),
+    fecha: clientes[clienteEditandoIdx].fecha
+  };
+  guardarClientesLS();
+  cerrarModal();
+  renderClientes();
+}
+
+function eliminarCliente(){
+  if(clienteEditandoIdx<0) return;
+  if(!confirm('Eliminar este cliente?')) return;
+  clientes.splice(clienteEditandoIdx, 1);
+  guardarClientesLS();
+  cerrarModal();
+  renderClientes();
+}
+
 // AJUSTES PERSISTENTES - cargar al inicio
 function cargarAjustes(){
   var mano = localStorage.getItem('dxf_mano');
@@ -776,6 +1015,7 @@ function compartirWhatsApp(){
   window.open(url, '_blank');
 }
 
+cargarClientes();
 cargarAjustes();
 calc();
 </script>
