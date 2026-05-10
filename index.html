@@ -933,9 +933,9 @@ function verPresupuestoHistorial(idx){
   var s = h.snap;
   // Reconstruir filas HTML desde los datos del snapshot
   var sr = s.r;
-  var sdtoRow = sr.dto.pct>0?'<tr><td colspan="2" style="color:#27500A">Descuento '+sr.dto.label+'</td><td class="r" style="color:#27500A">-'+sr.de.toFixed(2)+' EU</td></tr>':'';
-  var surgRow = sr.urg?'<tr><td colspan="2" style="color:#BA7517">Recargo urgencia (+25%)</td><td class="r" style="color:#BA7517">+'+sr.re.toFixed(2)+' EU</td></tr>':'';
-  var sfhRow  = sr.fh?'<tr><td colspan="2" style="color:#A32D2D">Recargo fuera horario (+50%)</td><td class="r" style="color:#A32D2D">+'+sr.re.toFixed(2)+' EU</td></tr>':'';
+  var sdtoRow = sr.dto.pct>0?'<tr><td colspan="2" style="color:#27500A">Descuento '+sr.dto.label+'</td><td class="r" style="color:#27500A">-'+sr.de.toFixed(2)+' €</td></tr>':'';
+  var surgRow = sr.urg?'<tr><td colspan="2" style="color:#BA7517">Recargo urgencia (+25%)</td><td class="r" style="color:#BA7517">+'+sr.re.toFixed(2)+' €</td></tr>':'';
+  var sfhRow  = sr.fh?'<tr><td colspan="2" style="color:#A32D2D">Recargo fuera horario (+50%)</td><td class="r" style="color:#A32D2D">+'+sr.re.toFixed(2)+' €</td></tr>':'';
   var sextras = sr.urg?' <b style="color:#BA7517">URGENTE +25%</b>':sr.fh?' <b style="color:#A32D2D">FUERA HORARIO +50%</b>':'';
   var snotasHtml = s.notas?'<div style="margin-top:5px;font-size:10px;color:#777"><b>Nota:</b> '+s.notas+'</div>':'';
   window._pres = {
@@ -1087,16 +1087,16 @@ function compartirWhatsApp(){
   texto += 'Trabajo: ' + d.desc + '\n';
   texto += 'Material: ' + d.mat + '\n';
   texto += 'Cantidad: ' + r.cant + ' ud\n\n';
-  texto += 'Base imponible: ' + r.total.toFixed(2) + ' EU\n';
-  texto += 'IVA 21%: ' + (r.total*IVA).toFixed(2) + ' EU\n';
-  texto += 'TOTAL: ' + r.tiva.toFixed(2) + ' EU\n\n';
+  texto += 'Base imponible: ' + r.total.toFixed(2) + ' €\n';
+  texto += 'IVA 21%: ' + (r.total*IVA).toFixed(2) + ' €\n';
+  texto += 'TOTAL: ' + r.tiva.toFixed(2) + ' €\n\n';
   if(Number(d.ant)===0){
     texto += 'Pago unico a la entrega\n';
   } else if(Number(d.ant)===100){
     texto += 'Pago unico por adelantado\n';
   } else {
-    texto += 'Anticipo (' + d.ant + '%): ' + (r.tiva*d.ant/100).toFixed(2) + ' EU\n';
-    texto += 'Resto a la entrega: ' + (r.tiva*(1-d.ant/100)).toFixed(2) + ' EU\n';
+    texto += 'Anticipo (' + d.ant + '%): ' + (r.tiva*d.ant/100).toFixed(2) + ' €\n';
+    texto += 'Resto a la entrega: ' + (r.tiva*(1-d.ant/100)).toFixed(2) + ' €\n';
   }
   texto += '\nValido ' + d.validez + ' dias. Plazo: ' + d.plazo;
   var url = 'https://wa.me/?text=' + encodeURIComponent(texto);
