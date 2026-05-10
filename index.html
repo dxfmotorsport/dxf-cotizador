@@ -721,10 +721,10 @@ function buildPres(){
   +'<div class="ptit">Detalle del trabajo</div>'
   +'<table class="ptab"><tr><th style="width:40%">Descripcion</th><th style="width:20%">Material</th><th style="width:10%">Tiempo</th><th class="r" style="width:8%">Uds</th><th class="r" style="width:10%">Eu/h</th><th class="r" style="width:12%">Base</th></tr>'
   +'<tr><td>'+d.desc+d.extras+'<div class="pops">'+d.ops.join('<br>')+'</div>'+notH+'</td><td>'+d.mat+'</td><td>'+d.tm+' min</td><td class="r">'+r.cant+'</td><td class="r">'+r.pvp.toFixed(2)+'</td><td class="r">'+r.unit.toFixed(2)+'</td></tr></table>'
-  +'<table class="ptot"><tr><td style="width:55%"></td><td>Base imponible</td><td class="r">'+r.total.toFixed(2)+' Eu</td></tr>'
+  +'<table class="ptot"><tr><td style="width:55%"></td><td>Base imponible</td><td class="r">'+r.total.toFixed(2)+' €</td></tr>'
   +dtoR+urgR+fhR
-  +'<tr><td></td><td style="font-weight:600">IVA 21%</td><td class="r">'+( r.total*IVA).toFixed(2)+' Eu</td></tr>'
-  +'<tr class="fin"><td></td><td>TOTAL CON IVA</td><td class="r">'+r.tiva.toFixed(2)+' Eu</td></tr></table>'
+  +'<tr><td></td><td style="font-weight:600">IVA 21%</td><td class="r">'+( r.total*IVA).toFixed(2)+' €</td></tr>'
+  +'<tr class="fin"><td></td><td>TOTAL CON IVA</td><td class="r">'+r.tiva.toFixed(2)+' €</td></tr></table>'
   +'<div class="ptit" style="margin-top:12px">Forma de pago</div>'
   +'<div class="ppay">'
   +(Number(d.ant)===0||d.ant===0||d.ant==='0'
