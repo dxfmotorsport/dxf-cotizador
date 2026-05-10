@@ -536,7 +536,7 @@ function guardarYGenerar(){
   var clv=document.getElementById('cli_vehiculo').value;
   var plazo=document.getElementById('plazo').value||'A convenir';
   var validez=n('validez')||30;
-  var ant=parseFloat(document.getElementById('anticipo').value)||0;if(isNaN(ant))ant=50;
+  var antVal=document.getElementById('anticipo').value; var ant=(antVal===''||antVal===null)?50:Number(antVal);
   var num='DXF-'+(numP<10?'00':numP<100?'0':'')+numP;
   var fecha=new Date().toLocaleDateString('es-ES',{day:'numeric',month:'long',year:'numeric'});
   historial.unshift({num:num,fecha:fecha,desc:desc,mat:mat,cant:r.cant,total:r.tiva.toFixed(2),cli:cli,urg:r.urg,fh:r.fh,serie:r.dto.pct>0});
