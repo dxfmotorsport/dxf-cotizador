@@ -479,8 +479,8 @@ function toggleRec(tipo){
   calc();
 }
 
-function n(id){return parseFloat(document.getElementById(id).value)||0;}
-function ch(id){return document.getElementById('op_'+id).checked;}
+function n(id){var el=document.getElementById(id);return el?parseFloat(el.value)||0:0;}
+function ch(id){var el=document.getElementById('op_'+id);return el?el.checked:false;}
 function rch(id){return document.getElementById('rec_'+id).checked;}
 function showEl(id,vis){document.getElementById(id).style.display=vis?'flex':'none';}
 
@@ -496,39 +496,9 @@ function calcCore(){
   var ch_=cm+n('mano');
   var mp=n('margen')/100;
   var pvp=ch_*(1+mp);
-  var mins=0;
-  for(var i=0;i<OPS.length;i++) if(ch(OPS[i])) mins+=n('t_'+OPS[i]);
-  var mat=n('mat_coste')*(1+n('mat_desp')/100);
-  var mec=ch_*(mins/60);
-  var sub=mec+mat;
-  var mar=sub*mp;
-  var base=sub+mar;
-  var minap=mat>0?Math.max(n('minimo')+mat,n('minimo_mat')):n('minimo');
-  var minact=base<minap;
-  var pm=minact?minap:base;
-  var cant=Math.max(1,n('cant'));
-  var dto=getDto(cant);
-  var de=pm*dto.pct;
-  var pd=pm-de;
-  var urg=rch('urgente'),fh=rch('fueraho');
-  var rp=fh?.5:urg?.25:0;
-  var re=pd*rp;
-  var unit=pd+re;
-  var ivaud=unit*IVA;
-  var uiva=unit+ivaud;
-  var total=unit*cant;
-  var tiva=uiva*cant;
-  return{cm:cm,ch:ch_,pvp:pvp,mins:mins,mat:mat,mec:mec,sub:sub,mar:mar,base:base,minact:minact,pm:pm,minap:minap,dto:dto,de:de,pd:pd,urg:urg,fh:fh,rp:rp,re:re,unit:unit,ivaud:ivaud,uiva:uiva,cant:cant,total:total,tiva:tiva};
-}
-
-function calcCore(){
-  // Legacy single-line calc for coste/hora panel
-  var cm=FIJOS/HORAS_BASE;
-  var ch_=cm+n('mano');
-  var mp=n('margen')/100;
-  var pvp=ch_*(1+mp);
   return{cm:cm,ch:ch_,pvp:pvp};
 }
+
 
 function calc(){
   var core=calcCore();
@@ -923,70 +893,6 @@ function syncLinea(id){
   calc();
 }
 
-function plantilla(tipo){
-  var preset = {ops:{},times:{setup:10,cilin:25,rosca:20,talad:15,pieza:45,acab:15}};
-  OPS_DEF.forEach(function(op){ preset.ops[op.id]=false; });
-  if(tipo==='eje'){
-    preset.desc='Eje / vastago'; preset.mat='acero_f114';
-    preset.ops.setup=true; preset.ops.cilin=true; preset.ops.pieza=true;
-    preset.times.setup=10; preset.times.cilin=30; preset.times.pieza=40;
-  } else if(tipo==='buje'){
-    preset.desc='Buje / casquillo'; preset.mat='acero_f114';
-    preset.ops.setup=true; preset.ops.cilin=true; preset.ops.talad=true;
-    preset.times.setup=10; preset.times.cilin=20; preset.times.talad=15;
-  } else if(tipo==='rosca'){
-    preset.desc='Pieza roscada'; preset.mat='acero_f114';
-    preset.ops.setup=true; preset.ops.cilin=true; preset.ops.rosca=true;
-    preset.times.setup=10; preset.times.cilin=20; preset.times.rosca=25;
-  } else if(tipo==='acabado'){
-    preset.desc='Acabado / pulido'; preset.mat='acero_f114';
-    preset.ops.setup=true; preset.ops.acab=true;
-    preset.times.setup=5; preset.times.acab=20;
-  } else if(tipo==='taladro'){
-    preset.desc='Taladrado / mandrinado'; preset.mat='acero_f114';
-    preset.ops.setup=true; preset.ops.talad=true;
-    preset.times.setup=5; preset.times.talad=20;
-  }
-  addLinea(preset);
-}
-
-// BASE DE CLIENTES
-var clientes = [];
-var clienteEditandoIdx = -1;
-
-function cargarClientes(){
-  try {
-    var c = localStorage.getItem('dxf_clientes');
-    if(c) clientes = JSON.parse(c);
-  } catch(e){ clientes=[]; }
-}
-
-function guardarClientesLS(){
-  try { localStorage.setItem('dxf_clientes', JSON.stringify(clientes)); } catch(e){}
-}
-
-function guardarCliente(){
-  var nombre = document.getElementById('nc_nombre').value.trim();
-  if(!nombre){ mostrarMsg('nc_msg','El nombre es obligatorio','#FCEBEB','#791F1F'); return; }
-  var cli = {
-    id: Date.now(),
-    nombre: nombre,
-    tel: document.getElementById('nc_tel').value.trim(),
-    email: document.getElementById('nc_email').value.trim(),
-    nif: document.getElementById('nc_nif').value.trim(),
-    dir: document.getElementById('nc_dir').value.trim(),
-    veh: document.getElementById('nc_veh').value.trim(),
-    notas: document.getElementById('nc_notas').value.trim(),
-    fecha: new Date().toLocaleDateString('es-ES')
-  };
-  clientes.unshift(cli);
-  guardarClientesLS();
-  limpiarFormCliente();
-  mostrarMsg('nc_msg','Cliente guardado correctamente','#EAF3DE','#27500A');
-  setTimeout(function(){ document.getElementById('nc_msg').style.display='none'; }, 2500);
-  renderClientes();
-}
-
 function guardarDesdeFormulario(){
   var nombre = document.getElementById('cli_nombre').value.trim();
   if(!nombre){ alert('Introduce primero el nombre del cliente'); return; }
@@ -1191,51 +1097,6 @@ function guardarAjustes(){
 });
 
 // PLANTILLAS DE TRABAJO
-function plantilla(tipo){
-  // Desmarcar todas las operaciones primero
-  ['setup','cilin','rosca','talad','pieza','acab'].forEach(function(op){
-    document.getElementById('op_'+op).checked = false;
-  });
-  
-  if(tipo === 'eje'){
-    document.getElementById('op_setup').checked = true;
-    document.getElementById('op_cilin').checked = true;
-    document.getElementById('op_pieza').checked = true;
-    document.getElementById('t_setup').value = 10;
-    document.getElementById('t_cilin').value = 30;
-    document.getElementById('t_pieza').value = 40;
-    document.getElementById('desc').value = 'Eje / vastago';
-  } else if(tipo === 'buje'){
-    document.getElementById('op_setup').checked = true;
-    document.getElementById('op_cilin').checked = true;
-    document.getElementById('op_talad').checked = true;
-    document.getElementById('t_setup').value = 10;
-    document.getElementById('t_cilin').value = 20;
-    document.getElementById('t_talad').value = 15;
-    document.getElementById('desc').value = 'Buje / casquillo';
-  } else if(tipo === 'rosca'){
-    document.getElementById('op_setup').checked = true;
-    document.getElementById('op_cilin').checked = true;
-    document.getElementById('op_rosca').checked = true;
-    document.getElementById('t_setup').value = 10;
-    document.getElementById('t_cilin').value = 20;
-    document.getElementById('t_rosca').value = 25;
-    document.getElementById('desc').value = 'Pieza roscada';
-  } else if(tipo === 'acabado'){
-    document.getElementById('op_setup').checked = true;
-    document.getElementById('op_acab').checked = true;
-    document.getElementById('t_setup').value = 5;
-    document.getElementById('t_acab').value = 20;
-    document.getElementById('desc').value = 'Acabado / pulido';
-  } else if(tipo === 'taladro'){
-    document.getElementById('op_setup').checked = true;
-    document.getElementById('op_talad').checked = true;
-    document.getElementById('t_setup').value = 5;
-    document.getElementById('t_talad').value = 20;
-    document.getElementById('desc').value = 'Taladrado / mandrinado';
-  }
-  calc();
-}
 
 // COMPARTIR POR WHATSAPP
 function compartirWhatsApp(){
@@ -1499,51 +1360,6 @@ function guardarAjustes(){
 });
 
 // PLANTILLAS DE TRABAJO
-function plantilla(tipo){
-  // Desmarcar todas las operaciones primero
-  ['setup','cilin','rosca','talad','pieza','acab'].forEach(function(op){
-    document.getElementById('op_'+op).checked = false;
-  });
-  
-  if(tipo === 'eje'){
-    document.getElementById('op_setup').checked = true;
-    document.getElementById('op_cilin').checked = true;
-    document.getElementById('op_pieza').checked = true;
-    document.getElementById('t_setup').value = 10;
-    document.getElementById('t_cilin').value = 30;
-    document.getElementById('t_pieza').value = 40;
-    document.getElementById('desc').value = 'Eje / vastago';
-  } else if(tipo === 'buje'){
-    document.getElementById('op_setup').checked = true;
-    document.getElementById('op_cilin').checked = true;
-    document.getElementById('op_talad').checked = true;
-    document.getElementById('t_setup').value = 10;
-    document.getElementById('t_cilin').value = 20;
-    document.getElementById('t_talad').value = 15;
-    document.getElementById('desc').value = 'Buje / casquillo';
-  } else if(tipo === 'rosca'){
-    document.getElementById('op_setup').checked = true;
-    document.getElementById('op_cilin').checked = true;
-    document.getElementById('op_rosca').checked = true;
-    document.getElementById('t_setup').value = 10;
-    document.getElementById('t_cilin').value = 20;
-    document.getElementById('t_rosca').value = 25;
-    document.getElementById('desc').value = 'Pieza roscada';
-  } else if(tipo === 'acabado'){
-    document.getElementById('op_setup').checked = true;
-    document.getElementById('op_acab').checked = true;
-    document.getElementById('t_setup').value = 5;
-    document.getElementById('t_acab').value = 20;
-    document.getElementById('desc').value = 'Acabado / pulido';
-  } else if(tipo === 'taladro'){
-    document.getElementById('op_setup').checked = true;
-    document.getElementById('op_talad').checked = true;
-    document.getElementById('t_setup').value = 5;
-    document.getElementById('t_talad').value = 20;
-    document.getElementById('desc').value = 'Taladrado / mandrinado';
-  }
-  calc();
-}
 
 // COMPARTIR POR WHATSAPP
 function compartirWhatsApp(){
