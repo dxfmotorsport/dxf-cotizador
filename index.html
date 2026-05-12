@@ -256,78 +256,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-siz
 
 <div id="tab-trabajo" class="panel">
   <div class="card">
-    <div class="card-title">Material</div>
-    <div class="g3">
-      <div class="field"><label>Material</label>
-        <select id="mat_tipo" oninput="calc()">
-          <optgroup label="Aceros">
-            <option value="acero_f114">Acero F-114 (C45)</option>
-            <option value="acero_f125">Acero F-125 (C60)</option>
-            <option value="acero_f111">Acero F-111 (C20)</option>
-            <option value="acero_bonificado">Acero bonificado 42CrMo4</option>
-            <option value="acero_inox_430">Acero inox 430 (ferritico)</option>
-          </optgroup>
-          <optgroup label="Inoxidables">
-            <option value="inox_304">Inoxidable 304</option>
-            <option value="inox_316">Inoxidable 316 (marino)</option>
-            <option value="inox_303">Inoxidable 303 (maquinado)</option>
-            <option value="inox_duplex">Inox Duplex 2205</option>
-          </optgroup>
-          <optgroup label="Aluminios">
-            <option value="alu_6061">Aluminio 6061-T6</option>
-            <option value="alu_6063">Aluminio 6063</option>
-            <option value="alu_6068">Aluminio 6068</option>
-            <option value="alu_7075">Aluminio 7075-T6 (aviac.)</option>
-            <option value="alu_2024">Aluminio 2024-T3</option>
-            <option value="alu_5083">Aluminio 5083 (marino)</option>
-          </optgroup>
-          <optgroup label="Cobres y latones">
-            <option value="bronce">Bronce CuSn8</option>
-            <option value="laton">Laton CuZn39Pb3</option>
-            <option value="cobre">Cobre electrolitico</option>
-          </optgroup>
-          <optgroup label="Otros metales">
-            <option value="titanio_gr2">Titanio Grado 2 (puro)</option>
-            <option value="titanio_gr5">Titanio Grado 5 (Ti6Al4V)</option>
-            <option value="hierro_gris">Hierro fundido gris</option>
-            <option value="zamak">Zamak / Aleacion zinc</option>
-          </optgroup>
-          <optgroup label="Plasticos tecnicos">
-            <option value="nylon">Nylon PA6 / PA66</option>
-            <option value="delrin">Delrin / POM-C</option>
-            <option value="ptfe">PTFE / Teflon</option>
-            <option value="peek">PEEK</option>
-          </optgroup>
-          <optgroup label="Otro">
-            <option value="otro">Otro material</option>
-            <option value="cliente">Cliente aporta material</option>
-          </optgroup>
-        </select>
-      </div>
-      <div class="field"><label>Coste material (&#8364;)</label><input type="number" id="mat_coste" value="0" min="0" step="0.5" oninput="calc()"></div>
-      <div class="field"><label>Desperdicio (%)</label><input type="number" id="mat_desp" value="20" min="0" max="100" oninput="calc()"><div class="note">Virutas, recortes</div></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <div class="card-title" style="margin-bottom:0">Lineas de trabajo</div>
+      <button class="btn primary sm" onclick="addLinea()">+ Añadir pieza</button>
     </div>
-  </div>
-  <div class="card">
-    <div class="card-title">Plantillas rapidas</div>
-    <div style="display:flex;gap:7px;flex-wrap:wrap">
-      <button class="btn sm" onclick="plantilla('eje')">Eje / Vastago</button>
-      <button class="btn sm" onclick="plantilla('buje')">Buje / Casquillo</button>
-      <button class="btn sm" onclick="plantilla('rosca')">Pieza roscada</button>
-      <button class="btn sm" onclick="plantilla('acabado')">Solo acabado</button>
-      <button class="btn sm" onclick="plantilla('taladro')">Taladrado</button>
-    </div>
-  </div>
-  <div class="card">
-    <div class="card-title">Operaciones</div>
-    <div class="ops-grid">
-      <div class="op-row"><input type="checkbox" id="op_setup" checked oninput="calc()"><label for="op_setup">Setup / amarre</label><input type="number" id="t_setup" value="10" min="1" oninput="calc()"><span class="op-unit">min</span></div>
-      <div class="op-row"><input type="checkbox" id="op_cilin" checked oninput="calc()"><label for="op_cilin">Cilindrado / refrentado</label><input type="number" id="t_cilin" value="25" min="1" oninput="calc()"><span class="op-unit">min</span></div>
-      <div class="op-row"><input type="checkbox" id="op_rosca" oninput="calc()"><label for="op_rosca">Roscado</label><input type="number" id="t_rosca" value="20" min="1" oninput="calc()"><span class="op-unit">min</span></div>
-      <div class="op-row"><input type="checkbox" id="op_talad" oninput="calc()"><label for="op_talad">Taladrado / mandrinado</label><input type="number" id="t_talad" value="15" min="1" oninput="calc()"><span class="op-unit">min</span></div>
-      <div class="op-row"><input type="checkbox" id="op_pieza" oninput="calc()"><label for="op_pieza">Pieza revolucion (eje/buje)</label><input type="number" id="t_pieza" value="45" min="1" oninput="calc()"><span class="op-unit">min</span></div>
-      <div class="op-row"><input type="checkbox" id="op_acab" oninput="calc()"><label for="op_acab">Acabado / pulido</label><input type="number" id="t_acab" value="15" min="1" oninput="calc()"><span class="op-unit">min</span></div>
-    </div>
+    <div id="lineas_container"></div>
   </div>
   <div class="card">
     <div class="card-title">Tipo de trabajo</div>
@@ -345,14 +278,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-siz
     </div>
   </div>
   <div class="card">
-    <div class="card-title">Pedido</div>
-    <div class="g2" style="margin-bottom:10px">
-      <div class="field"><label>Cantidad de piezas</label><input type="number" id="cant" value="1" min="1" oninput="calc()"></div>
-      <div class="field"><label>Descripcion</label><input type="text" id="desc" placeholder="Eje transmision acero F-114"></div>
-    </div>
-    <div class="field"><label>Notas</label><textarea id="notas" placeholder="Cliente aporta el material. Tolerancia 0,05mm."></textarea></div>
+    <div class="card-title">Notas generales del presupuesto</div>
+    <div class="field"><textarea id="notas" placeholder="Observaciones generales, condiciones especiales..."></textarea></div>
   </div>
 </div>
+
 
 <div id="tab-resultado" class="panel">
   <div class="card">
@@ -585,51 +515,74 @@ function calcCore(){
   return{cm:cm,ch:ch_,pvp:pvp,mins:mins,mat:mat,mec:mec,sub:sub,mar:mar,base:base,minact:minact,pm:pm,minap:minap,dto:dto,de:de,pd:pd,urg:urg,fh:fh,rp:rp,re:re,unit:unit,ivaud:ivaud,uiva:uiva,cant:cant,total:total,tiva:tiva};
 }
 
+function calcCore(){
+  // Legacy single-line calc for coste/hora panel
+  var cm=FIJOS/HORAS_BASE;
+  var ch_=cm+n('mano');
+  var mp=n('margen')/100;
+  var pvp=ch_*(1+mp);
+  return{cm:cm,ch:ch_,pvp:pvp};
+}
+
 function calc(){
-  var r=calcCore();
-  document.getElementById('out_maq').textContent=r.cm.toFixed(2)+'€/h';
-  document.getElementById('out_total').textContent=r.ch.toFixed(2)+'€/h';
-  document.getElementById('out_pvp').textContent=r.pvp.toFixed(2)+'€/h';
-  document.getElementById('out_tiempo').textContent=r.mins.toFixed(0)+' min';
-  document.getElementById('out_unit').textContent=r.unit.toFixed(2)+'€';
-  document.getElementById('out_pedido_iva').textContent=r.tiva.toFixed(2)+'€';
-  document.getElementById('d_mec').textContent=r.mec.toFixed(2)+'€';
-  document.getElementById('d_mat').textContent=r.mat.toFixed(2)+'€';
-  document.getElementById('d_sub').textContent=r.sub.toFixed(2)+'€';
+  var core=calcCore();
+  document.getElementById('out_maq').textContent=core.cm.toFixed(2)+'€/h';
+  document.getElementById('out_total').textContent=core.ch.toFixed(2)+'€/h';
+  document.getElementById('out_pvp').textContent=core.pvp.toFixed(2)+'€/h';
+
+  // Sync all lineas from DOM
+  lineas.forEach(function(l){ getLineaData(l.id); });
+
+  // Sum all lineas
+  var totalBase=0, totalIva=0, totalMins=0;
+  var urg=rch('urgente'), fh=rch('fueraho');
+  lineas.forEach(function(l){
+    var res=calcLinea(l);
+    totalBase += res.total;
+    totalIva += res.total_iva;
+    totalMins += res.mins * l.cant;
+  });
+
+  // Update resultado panel
+  document.getElementById('out_tiempo').textContent=totalMins.toFixed(0)+' min';
+  document.getElementById('out_unit').textContent=(lineas.length===1&&lineas[0]?calcLinea(lineas[0]).unit.toFixed(2):'—')+'€';
+  document.getElementById('out_pedido_iva').textContent=totalIva.toFixed(2)+'€';
+  document.getElementById('d_mec').textContent='—';
+  document.getElementById('d_mat').textContent='—';
+  document.getElementById('d_sub').textContent='—';
   document.getElementById('d_mpct').textContent=n('margen').toFixed(0);
-  document.getElementById('d_mar').textContent=r.mar.toFixed(2)+'€';
-  document.getElementById('d_tot').textContent=r.unit.toFixed(2)+'€';
-  document.getElementById('d_iva').textContent=r.ivaud.toFixed(2)+'€';
-  document.getElementById('d_tot_iva').textContent=r.uiva.toFixed(2)+'€';
-  document.getElementById('d_cant_label').textContent=r.cant;
-  document.getElementById('d_pedido_iva').textContent=r.tiva.toFixed(2)+'€';
-  showEl('av_min',r.minact); showEl('row_min',r.minact);
-  if(r.minact){document.getElementById('av_min_v').textContent=r.pm.toFixed(2)+'€';document.getElementById('d_min_diff').textContent='+'+(r.pm-r.base).toFixed(2)+'€';}
-  var da=r.dto.pct>0;
-  showEl('av_serie',da); showEl('row_dto',da);
-  if(da){document.getElementById('av_serie_l').textContent='Dto '+r.dto.label;document.getElementById('av_serie_v').textContent='-'+r.de.toFixed(2)+'€';document.getElementById('row_dto_l').textContent='Dto '+r.dto.label;document.getElementById('d_dto').textContent='-'+r.de.toFixed(2)+'€';}
-  var dts=['dtr1','dtr2','dtr3','dtr4'];
-  for(var i=0;i<dts.length;i++) document.getElementById(dts[i]).classList.remove('act');
-  document.getElementById(r.dto.tr).classList.add('act');
-  showEl('av_urg',r.urg); showEl('row_urg',r.urg);
-  if(r.urg){document.getElementById('av_urg_v').textContent='+'+r.re.toFixed(2)+'€';document.getElementById('d_urg').textContent='+'+r.re.toFixed(2)+'€';}
-  showEl('av_fh',r.fh); showEl('row_fh',r.fh);
-  if(r.fh){document.getElementById('av_fh_v').textContent='+'+r.re.toFixed(2)+'€';document.getElementById('d_fh').textContent='+'+r.re.toFixed(2)+'€';}
-  document.getElementById('card_urg').classList.toggle('act-urg',r.urg);
-  document.getElementById('card_fh').classList.toggle('act-fh',r.fh);
+  document.getElementById('d_mar').textContent='—';
+  document.getElementById('d_tot').textContent=totalBase.toFixed(2)+'€';
+  document.getElementById('d_iva').textContent=(totalIva-totalBase).toFixed(2)+'€';
+  document.getElementById('d_tot_iva').textContent=totalIva.toFixed(2)+'€';
+  document.getElementById('d_cant_label').textContent=lineas.length;
+  document.getElementById('d_pedido_iva').textContent=totalIva.toFixed(2)+'€';
+
+  // Hide single-line alerts
+  ['av_min','av_serie','av_urg','av_fh','row_min','row_dto','row_urg','row_fh'].forEach(function(id){
+    document.getElementById(id).style.display='none';
+  });
+  if(urg) { document.getElementById('av_urg').style.display='flex'; document.getElementById('av_urg_v').textContent='+25%'; }
+  if(fh)  { document.getElementById('av_fh').style.display='flex';  document.getElementById('av_fh_v').textContent='+50%'; }
+  document.getElementById('card_urg').classList.toggle('act-urg',urg);
+  document.getElementById('card_fh').classList.toggle('act-fh',fh);
+
   var notas=document.getElementById('notas').value.trim();
   var np=document.getElementById('notas_prev');
   if(notas){np.style.display='block';np.textContent='Notas: '+notas;}else{np.style.display='none';}
-  var ant=parseFloat(document.getElementById('anticipo').value);if(isNaN(ant))ant=0;
+
+  var ant=document.getElementById('anticipo').valueAsNumber;
+  if(isNaN(ant)) ant=50;
   var ap=document.getElementById('anticipo_prev');
-  if(r.tiva>0){
+  if(ant>=0&&totalIva>0){
     ap.style.display='block';
-    if(ant===0) ap.textContent='Pago unico a la entrega: '+r.tiva.toFixed(2)+'€ (IVA incluido)';
-    else if(ant===100) ap.textContent='Pago unico por adelantado: '+r.tiva.toFixed(2)+'€ (IVA incluido)';
-    else ap.textContent='Anticipo ('+ant+'%): '+(r.tiva*ant/100).toFixed(2)+'€  ·  Resto: '+(r.tiva*(1-ant/100)).toFixed(2)+'€ (con IVA)';
+    if(ant===0) ap.textContent='Pago unico a la entrega: '+totalIva.toFixed(2)+'€ (IVA incluido)';
+    else if(ant===100) ap.textContent='Pago unico por adelantado: '+totalIva.toFixed(2)+'€ (IVA incluido)';
+    else ap.textContent='Anticipo ('+ant+'%): '+(totalIva*ant/100).toFixed(2)+'€  ·  Resto: '+(totalIva*(1-ant/100)).toFixed(2)+'€';
   } else { ap.style.display='none'; }
 }
 
+function _oldCalc(){
 function simular(){
   var pvp=calcCore().pvp;
   var h=Math.max(1,parseFloat(document.getElementById('sim_horas').value)||80);
@@ -652,10 +605,10 @@ function simular(){
 }
 
 function guardarYGenerar(){
-  var r=calcCore();
-  var desc=document.getElementById('desc').value||'Sin descripcion';
-  var me=document.getElementById('mat_tipo');
-  var mat=me.options[me.selectedIndex].text;
+  if(!lineas.length){ alert('Añade al menos una pieza antes de generar el presupuesto'); return; }
+  // Sync all lineas
+  lineas.forEach(function(l){ getLineaData(l.id); });
+
   var notas=document.getElementById('notas').value.trim();
   var cli=document.getElementById('cli_nombre').value||'Cliente';
   var clc=document.getElementById('cli_contacto').value;
@@ -671,27 +624,45 @@ function guardarYGenerar(){
   var antFinal=Number(ant);
   var num='DXF-'+(numP<10?'00':numP<100?'0':'')+numP;
   var fecha=new Date().toLocaleDateString('es-ES',{day:'numeric',month:'long',year:'numeric'});
-  // Operaciones
-  var tm=0;
-  for(var i=0;i<OPS.length;i++) if(ch(OPS[i])) tm+=n('t_'+OPS[i]);
-  var ops=[];
-  for(var i=0;i<OPS.length;i++) if(ch(OPS[i])) ops.push('- '+document.querySelector('label[for=op_'+OPS[i]+']').textContent+' ('+n('t_'+OPS[i])+' min)');
-  var extras=r.urg?' (URGENTE +25%)':r.fh?' (FUERA HORARIO +50%)':'';
+  var urg=rch('urgente'), fh=rch('fueraho');
+
+  // Calculate totals from all lineas
+  var totalBase=0, totalIva=0;
+  var lineasCalc = lineas.map(function(l){
+    var me = document.getElementById('lmat_'+l.id);
+    var matLabel = me ? me.options[me.selectedIndex].text : l.mat;
+    var res = calcLinea(l);
+    totalBase += res.total;
+    totalIva += res.total_iva;
+    var ops = OPS_DEF.filter(function(op){ return l.ops[op.id]; })
+      .map(function(op){ return '- '+op.label+' ('+l.times[op.id]+' min)'; });
+    return {l:l, res:res, matLabel:matLabel, ops:ops};
+  });
+
   var cll=[cli];
   if(cln) cll.push('NIF/CIF: '+cln);
   if(cld) cll.push(cld);
   if(clc) cll.push(clc);
   if(clv) cll.push('Vehiculo: '+clv);
-  // Guardar en historial con snapshot
+
+  var extras = urg?' (URGENTE +25%)':fh?' (FUERA HORARIO +50%)':'';
+
+  // Save to historial
+  var desc = lineas.length===1 ? (lineas[0].desc||'Sin descripcion') : lineas.length+' piezas';
   historial.unshift({
-    num:num, fecha:fecha, desc:desc, mat:mat, cant:r.cant,
-    total:r.tiva.toFixed(2), cli:cli, urg:r.urg, fh:r.fh, serie:r.dto.pct>0,
+    num:num, fecha:fecha, desc:desc+extras, mat:'—', cant:lineas.length,
+    total:totalIva.toFixed(2), cli:cli, urg:urg, fh:fh, serie:false,
     snap:{
-      r:{pvp:r.pvp,unit:r.unit,cant:r.cant,total:r.total,tiva:r.tiva,
-         de:r.de,re:r.re,urg:r.urg,fh:r.fh,
-         dto:{pct:r.dto.pct,label:r.dto.label}},
-      cll:cll, mat:mat, plazo:plazo, validez:validez, ant:antFinal,
-      tm:tm, ops:ops, notas:notas
+      lineasCalc:lineasCalc.map(function(lc){
+        return {desc:lc.l.desc, matLabel:lc.matLabel, cant:lc.l.cant,
+                ops:lc.ops, res:{
+                  mins:lc.res.mins, unit:lc.res.unit, iva:lc.res.iva,
+                  unit_iva:lc.res.unit_iva, total:lc.res.total, total_iva:lc.res.total_iva,
+                  dto:{pct:lc.res.dto.pct, label:lc.res.dto.label}
+                }};
+      }),
+      cll:cll, plazo:plazo, validez:validez, ant:antFinal,
+      notas:notas, urg:urg, fh:fh, totalBase:totalBase, totalIva:totalIva
     }
   });
   numP++;
@@ -699,9 +670,13 @@ function guardarYGenerar(){
     localStorage.setItem('dxf_historial', JSON.stringify(historial.slice(0,50)));
     localStorage.setItem('dxf_nump', numP);
   } catch(e){}
-  // Mostrar presupuesto
-  window._pres={r:r,num:num,fecha:fecha,cli:cli,cll:cll,desc:desc,mat:mat,
-    plazo:plazo,validez:validez,ant:antFinal,tm:tm,ops:ops,extras:extras,notas:notas};
+
+  window._pres={
+    num:num, fecha:fecha, cli:cli, cll:cll,
+    lineasCalc:lineasCalc, plazo:plazo, validez:validez,
+    ant:antFinal, notas:notas, urg:urg, fh:fh,
+    totalBase:totalBase, totalIva:totalIva
+  };
   document.getElementById('pres_render').innerHTML=buildPres();
   document.getElementById('pres_empty').style.display='none';
   document.getElementById('pres_content').style.display='block';
@@ -710,39 +685,69 @@ function guardarYGenerar(){
 
 
 function buildPres(){
-  var d=window._pres; var r=d.r;
-  var dtoR=r.dto.pct>0?'<tr><td colspan="2" style="color:#27500A">Descuento '+r.dto.label+'</td><td class="r" style="color:#27500A">-'+r.de.toFixed(2)+'€</td></tr>':'';
-  var urgR=r.urg?'<tr><td colspan="2" style="color:#BA7517">Recargo urgencia (+25%)</td><td class="r" style="color:#BA7517">+'+r.re.toFixed(2)+'€</td></tr>':'';
-  var fhR=r.fh?'<tr><td colspan="2" style="color:#A32D2D">Recargo fuera horario (+50%)</td><td class="r" style="color:#A32D2D">+'+r.re.toFixed(2)+'€</td></tr>':'';
-  var notH=d.notas?'<div style="margin-top:4px;font-size:10px;color:#777">Nota: '+d.notas+'</div>':'';
-  return '<div class="ph"><div class="pb"><img src="'+LOGO+'" alt="DXF"><div><div class="pb-name">DXFMotorsport</div><div class="pb-sub">dxfmotorsport.com<br>Naron, Galicia</div></div></div>'
-  +'<div><div class="pn">'+d.num+'</div><div class="pf">'+d.fecha+'</div><div style="text-align:right"><span class="pbadge">PRESUPUESTO</span></div></div></div>'
-  +'<div class="ptit">Cliente</div><div class="pcli"><div class="pcn">'+d.cli+'</div><div class="pcs">'+d.cll.slice(1).join('<br>')+'</div></div>'
-  +'<div class="ptit">Detalle del trabajo</div>'
-  +'<table class="ptab"><tr><th style="width:40%">Descripcion</th><th style="width:20%">Material</th><th style="width:10%">Tiempo</th><th class="r" style="width:8%">Uds</th><th class="r" style="width:10%">Eu/h</th><th class="r" style="width:12%">Base</th></tr>'
-  +'<tr><td>'+d.desc+d.extras+'<div class="pops">'+d.ops.join('<br>')+'</div>'+notH+'</td><td>'+d.mat+'</td><td>'+d.tm+' min</td><td class="r">'+r.cant+'</td><td class="r">'+r.pvp.toFixed(2)+'</td><td class="r">'+r.unit.toFixed(2)+'</td></tr></table>'
-  +'<table class="ptot"><tr><td style="width:55%"></td><td>Base imponible</td><td class="r">'+r.total.toFixed(2)+' €</td></tr>'
-  +dtoR+urgR+fhR
-  +'<tr><td></td><td style="font-weight:600">IVA 21%</td><td class="r">'+( r.total*IVA).toFixed(2)+' €</td></tr>'
-  +'<tr class="fin"><td></td><td>TOTAL CON IVA</td><td class="r">'+r.tiva.toFixed(2)+' €</td></tr></table>'
-  +'<div class="ptit" style="margin-top:12px">Forma de pago</div>'
-  +'<div class="ppay">'
-  +(Number(d.ant)===0||d.ant===0||d.ant==='0'
-    ? '<div class="ppay-box" style="flex:2"><div class="ppay-label">Pago unico a la entrega</div><div class="ppay-val">'+r.tiva.toFixed(2)+'</div></div><div class="ppay-box"><div class="ppay-label">Total IVA incluido</div><div class="ppay-val">'+r.tiva.toFixed(2)+'</div></div>'
-    : Number(d.ant)===100
-    ? '<div class="ppay-box" style="flex:2"><div class="ppay-label">Pago unico por adelantado</div><div class="ppay-val">'+r.tiva.toFixed(2)+'</div></div><div class="ppay-box"><div class="ppay-label">Total IVA incluido</div><div class="ppay-val">'+r.tiva.toFixed(2)+'</div></div>'
-    : '<div class="ppay-box"><div class="ppay-label">Anticipo ('+d.ant+'%)</div><div class="ppay-val">'+( r.tiva*d.ant/100).toFixed(2)+'</div></div><div class="ppay-box"><div class="ppay-label">Resto ('+(100-d.ant)+'%)</div><div class="ppay-val">'+( r.tiva*(1-d.ant/100)).toFixed(2)+'</div></div><div class="ppay-box"><div class="ppay-label">Total IVA incl.</div><div class="ppay-val">'+r.tiva.toFixed(2)+'</div></div>'
-  )
-  +'</div>'
-  +(Number(d.ant)===0||d.ant===0||d.ant==='0'
-    ? '+'+'<div class="pcond">Validez: '+d.validez+' dias. Plazo: '+d.plazo+'. Pago: unico a la entrega. IVA 21% incluido.</div>'
-    : Number(d.ant)===100
-    ? '+'+'<div class="pcond">Validez: '+d.validez+' dias. Plazo: '+d.plazo+'. Pago: unico por adelantado. IVA 21% incluido.</div>'
-    : '+'+(Number(d.ant)===0||d.ant===0||d.ant==='0'?'<div class="pcond">Validez: '+d.validez+' dias. Plazo: '+d.plazo+'. Pago: unico a la entrega. IVA 21% incluido.</div>':Number(d.ant)===100||d.ant===100||d.ant==='100'?'<div class="pcond">Validez: '+d.validez+' dias. Plazo: '+d.plazo+'. Pago: unico por adelantado. IVA 21% incluido.</div>':'<div class="pcond">Validez: '+d.validez+' dias. Plazo: '+d.plazo+'. Pago: '+d.ant+'% anticipo + '+(100-d.ant)+'% entrega. IVA 21% incluido.</div>')
-  )
-  +'<div class="pfooter"><div><div class="pfl"></div><div class="pfl-label">Firma - DXFMotorsport</div></div>'
-  +'<div class="pfi">DXFMotorsport · dxfmotorsport.com<br>'+d.num+' · '+d.fecha+'</div></div>';
+  var d=window._pres;
+  var urg=d.urg, fh=d.fh;
+  var extrasLabel=urg?' <b style="color:#BA7517">URGENTE +25%</b>':fh?' <b style="color:#A32D2D">FUERA HORARIO +50%</b>':'';
+
+  // Build table rows for each linea
+  var rows = d.lineasCalc.map(function(lc, i){
+    var dto_r = lc.res.dto.pct>0?'<br><small style="color:#27500A">Dto. '+lc.res.dto.label+'</small>':'';
+    return '<tr>'
+      +'<td>'+(lc.desc||'Pieza '+(i+1))+extrasLabel+'<div class="pops">'+lc.ops.join('<br>')+'</div>'+dto_r+'</td>'
+      +'<td>'+lc.matLabel+'</td>'
+      +'<td>'+lc.res.mins+' min</td>'
+      +'<td class="r">'+lc.l.cant+'</td>'
+      +'<td class="r">'+lc.res.unit.toFixed(2)+' €</td>'
+      +'<td class="r">'+lc.res.total.toFixed(2)+' €</td>'
+      +'</tr>';
+  }).join('');
+
+  // Payment section
+  var payHtml;
+  if(Number(d.ant)===0){
+    payHtml='<div class="ppay"><div class="ppay-box" style="flex:2"><div class="ppay-label">Pago unico a la entrega</div><div class="ppay-val">'+d.totalIva.toFixed(2)+' €</div></div><div class="ppay-box"><div class="ppay-label">Total IVA incluido</div><div class="ppay-val">'+d.totalIva.toFixed(2)+' €</div></div></div>';
+  } else if(Number(d.ant)===100){
+    payHtml='<div class="ppay"><div class="ppay-box" style="flex:2"><div class="ppay-label">Pago unico por adelantado</div><div class="ppay-val">'+d.totalIva.toFixed(2)+' €</div></div><div class="ppay-box"><div class="ppay-label">Total IVA incluido</div><div class="ppay-val">'+d.totalIva.toFixed(2)+' €</div></div></div>';
+  } else {
+    payHtml='<div class="ppay">'
+      +'<div class="ppay-box"><div class="ppay-label">Anticipo ('+d.ant+'%)</div><div class="ppay-val">'+(d.totalIva*d.ant/100).toFixed(2)+' €</div></div>'
+      +'<div class="ppay-box"><div class="ppay-label">Resto ('+(100-d.ant)+'%)</div><div class="ppay-val">'+(d.totalIva*(1-d.ant/100)).toFixed(2)+' €</div></div>'
+      +'<div class="ppay-box"><div class="ppay-label">Total IVA incl.</div><div class="ppay-val">'+d.totalIva.toFixed(2)+' €</div></div>'
+      +'</div>';
+  }
+
+  var condText = Number(d.ant)===0?'Pago unico a la entrega':Number(d.ant)===100?'Pago unico por adelantado':d.ant+'% anticipo + '+(100-d.ant)+'% entrega';
+  var notasHtml = d.notas?'<div class="pcond" style="margin-top:6px"><b>Notas:</b> '+d.notas+'</div>':'';
+
+  return '<div class="ph"><div class="pb"><img src="'+LOGO+'" alt="DXF"><div>'
+    +'<div class="pb-name">DXFMotorsport</div>'
+    +'<div class="pb-sub">dxfmotorsport.com<br>Naron, Galicia</div>'
+    +'</div></div>'
+    +'<div><div class="pn">'+d.num+'</div><div class="pf">'+d.fecha+'</div>'
+    +'<div style="text-align:right"><span class="pbadge">PRESUPUESTO</span></div></div></div>'
+    +'<div class="ptit">Cliente</div>'
+    +'<div class="pcli"><div class="pcn">'+d.cli+'</div><div class="pcs">'+d.cll.slice(1).join('<br>')+'</div></div>'
+    +'<div class="ptit">Detalle del trabajo</div>'
+    +'<table class="ptab">'
+    +'<tr><th style="width:35%">Descripcion</th><th style="width:18%">Material</th><th style="width:10%">Tiempo</th>'
+    +'<th class="r" style="width:8%">Uds</th><th class="r" style="width:12%">€/ud base</th><th class="r" style="width:12%">Subtotal</th></tr>'
+    +rows
+    +'</table>'
+    +'<table class="ptot">'
+    +'<tr><td style="width:55%"></td><td>Base imponible</td><td class="r">'+d.totalBase.toFixed(2)+' €</td></tr>'
+    +'<tr><td></td><td style="font-weight:600">IVA 21%</td><td class="r">'+((d.totalIva-d.totalBase)).toFixed(2)+' €</td></tr>'
+    +'<tr class="fin"><td></td><td>TOTAL CON IVA</td><td class="r">'+d.totalIva.toFixed(2)+' €</td></tr>'
+    +'</table>'
+    +'<div class="ptit" style="margin-top:12px">Forma de pago</div>'
+    +payHtml
+    +'<div class="pcond">Validez: '+d.validez+' dias. Plazo: '+d.plazo+'. Pago: '+condText+'. IVA 21% incluido.</div>'
+    +notasHtml
+    +'<div class="pfooter">'
+    +'<div><div class="pfl"></div><div class="pfl-label">Firma - DXFMotorsport</div></div>'
+    +'<div class="pfi">DXFMotorsport · dxfmotorsport.com<br>'+d.num+' · '+d.fecha+'</div>'
+    +'</div>';
 }
+
 
 function abrirPDF(){
   if(!window._pres) return;
@@ -771,6 +776,172 @@ function limpiarHist(){
     localStorage.removeItem('dxf_nump');
   } catch(e) {}
   renderHist();
+}
+
+// SISTEMA DE LINEAS MULTIPLES
+var lineas = [];
+var lineaId = 0;
+
+var MAT_OPTIONS = [
+  ['acero_f114','Acero F-114 (C45)'],['acero_f125','Acero F-125 (C60)'],
+  ['acero_f111','Acero F-111 (C20)'],['acero_bonificado','Acero bonificado 42CrMo4'],
+  ['acero_inox_430','Acero inox 430'],['inox_304','Inoxidable 304'],
+  ['inox_316','Inoxidable 316 (marino)'],['inox_303','Inoxidable 303'],
+  ['inox_duplex','Inox Duplex 2205'],['alu_6061','Aluminio 6061-T6'],
+  ['alu_6063','Aluminio 6063'],['alu_6068','Aluminio 6068'],
+  ['alu_7075','Aluminio 7075-T6'],['alu_2024','Aluminio 2024-T3'],
+  ['alu_5083','Aluminio 5083 (marino)'],['bronce','Bronce CuSn8'],
+  ['laton','Laton CuZn39Pb3'],['cobre','Cobre electrolitico'],
+  ['titanio_gr2','Titanio Grado 2'],['titanio_gr5','Titanio Grado 5 (Ti6Al4V)'],
+  ['hierro_gris','Hierro fundido gris'],['zamak','Zamak / Aleacion zinc'],
+  ['nylon','Nylon PA6 / PA66'],['delrin','Delrin / POM-C'],
+  ['ptfe','PTFE / Teflon'],['peek','PEEK'],
+  ['otro','Otro material'],['cliente','Cliente aporta material']
+];
+
+var OPS_DEF = [
+  {id:'setup', label:'Setup / amarre', t:10},
+  {id:'cilin', label:'Cilindrado / refrentado', t:25},
+  {id:'rosca', label:'Roscado', t:20},
+  {id:'talad', label:'Taladrado / mandrinado', t:15},
+  {id:'pieza', label:'Pieza revolucion (eje/buje)', t:45},
+  {id:'acab',  label:'Acabado / pulido', t:15}
+];
+
+function addLinea(preset){
+  var id = ++lineaId;
+  var l = {
+    id:id,
+    desc: preset?preset.desc:'',
+    mat: preset?preset.mat:'acero_f114',
+    mat_coste:0, mat_desp:20, cant:1,
+    ops: preset?preset.ops:{'setup':true,'cilin':true},
+    times: preset?preset.times:{setup:10,cilin:25,rosca:20,talad:15,pieza:45,acab:15}
+  };
+  lineas.push(l);
+  renderLineas();
+  calc();
+}
+
+function removeLinea(id){
+  lineas = lineas.filter(function(l){ return l.id!==id; });
+  renderLineas();
+  calc();
+}
+
+function getLineaData(id){
+  var l = lineas.find(function(l){ return l.id===id; });
+  if(!l) return null;
+  l.desc = document.getElementById('ldesc_'+id).value;
+  l.mat = document.getElementById('lmat_'+id).value;
+  l.mat_coste = parseFloat(document.getElementById('lmat_coste_'+id).value)||0;
+  l.mat_desp = parseFloat(document.getElementById('lmat_desp_'+id).value)||0;
+  l.cant = Math.max(1, parseInt(document.getElementById('lcant_'+id).value)||1);
+  OPS_DEF.forEach(function(op){
+    l.ops[op.id] = document.getElementById('lop_'+op.id+'_'+id).checked;
+    l.times[op.id] = parseFloat(document.getElementById('lt_'+op.id+'_'+id).value)||0;
+  });
+  return l;
+}
+
+function calcLinea(l){
+  var coste_h = FIJOS/HORAS_BASE + n('mano');
+  var margen_pct = n('margen')/100;
+  var mins = 0;
+  OPS_DEF.forEach(function(op){ if(l.ops[op.id]) mins += l.times[op.id]; });
+  var mat = l.mat_coste * (1 + l.mat_desp/100);
+  var mec = coste_h * (mins/60);
+  var sub = mec + mat;
+  var mar = sub * margen_pct;
+  var base = sub + mar;
+  var min_ap = mat>0 ? Math.max(n('minimo')+mat, n('minimo_mat')) : n('minimo');
+  var unit = base < min_ap ? min_ap : base;
+  var dto = getDto(l.cant);
+  var dto_eur = unit * dto.pct;
+  unit = unit - dto_eur;
+  var urg = rch('urgente'), fh = rch('fueraho');
+  var rec_pct = fh?.5:urg?.25:0;
+  unit = unit + unit*rec_pct;
+  return {mins:mins, mat:mat, mec:mec, unit:unit, iva:unit*IVA, unit_iva:unit*(1+IVA),
+          total:unit*l.cant, total_iva:unit*(1+IVA)*l.cant, cant:l.cant, dto:dto, dto_eur:dto_eur};
+}
+
+function renderLineas(){
+  var container = document.getElementById('lineas_container');
+  if(!lineas.length){
+    container.innerHTML = '<div class="empty" style="padding:1rem 0">Pulsa &ldquo;+ Añadir pieza&rdquo; para empezar</div>';
+    return;
+  }
+  container.innerHTML = lineas.map(function(l, idx){
+    var matOpts = MAT_OPTIONS.map(function(m){
+      return '<option value="'+m[0]+'"'+(l.mat===m[0]?' selected':'')+'>'+m[1]+'</option>';
+    }).join('');
+    var opsHtml = OPS_DEF.map(function(op){
+      return '<div class="op-row">'
+        +'<input type="checkbox" id="lop_'+op.id+'_'+l.id+'"'+(l.ops[op.id]?' checked':'')+' oninput="syncLinea('+l.id+')">'
+        +'<label for="lop_'+op.id+'_'+l.id+'" style="font-size:12px;flex:1;cursor:pointer">'+op.label+'</label>'
+        +'<input type="number" id="lt_'+op.id+'_'+l.id+'" value="'+(l.times[op.id]||op.t)+'" min="1" style="width:50px;padding:4px 5px;font-size:12px;border:1px solid #ddd;border-radius:6px;background:#fff;text-align:center;-webkit-appearance:none" oninput="syncLinea('+l.id+')">'
+        +'<span class="op-unit">min</span></div>';
+    }).join('');
+    var res = calcLinea(l);
+    return '<div style="border:1px solid #e0e0e0;border-radius:10px;padding:14px;margin-bottom:10px;background:#fafafa">'
+      +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">'
+        +'<span style="font-weight:600;font-size:13px;color:#185FA5">Pieza '+(idx+1)+'</span>'
+        +'<div style="display:flex;align-items:center;gap:8px">'
+          +'<span style="font-size:12px;color:#888">'+res.total_iva.toFixed(2)+' € (con IVA)</span>'
+          +(lineas.length>1?'<button class="btn sm red" onclick="removeLinea('+l.id+')">Eliminar</button>':'')
+        +'</div>'
+      +'</div>'
+      +'<div class="g2" style="margin-bottom:8px">'
+        +'<div class="field"><label>Descripcion</label><input type="text" id="ldesc_'+l.id+'" value="'+l.desc+'" placeholder="Ej: Eje transmision" oninput="syncLinea('+l.id+')"></div>'
+        +'<div class="field"><label>Cantidad</label><input type="number" id="lcant_'+l.id+'" value="'+l.cant+'" min="1" oninput="syncLinea('+l.id+')"></div>'
+      +'</div>'
+      +'<div class="g3" style="margin-bottom:10px">'
+        +'<div class="field"><label>Material</label><select id="lmat_'+l.id+'" oninput="syncLinea('+l.id+')">'+matOpts+'</select></div>'
+        +'<div class="field"><label>Coste material (€)</label><input type="number" id="lmat_coste_'+l.id+'" value="'+l.mat_coste+'" min="0" step="0.5" oninput="syncLinea('+l.id+')"></div>'
+        +'<div class="field"><label>Desperdicio (%)</label><input type="number" id="lmat_desp_'+l.id+'" value="'+l.mat_desp+'" min="0" max="100" oninput="syncLinea('+l.id+')"></div>'
+      +'</div>'
+      +'<div class="card-title" style="margin-bottom:6px">Operaciones</div>'
+      +'<div class="ops-grid">'+opsHtml+'</div>'
+      +'<div style="margin-top:8px;padding:8px 10px;background:#E6F1FB;border-radius:8px;font-size:12px;display:flex;justify-content:space-between">'
+        +'<span style="color:#0C447C">'+res.mins+' min · Base: '+res.unit.toFixed(2)+' €/ud · IVA: '+res.iva.toFixed(2)+' €/ud</span>'
+        +'<span style="font-weight:700;color:#185FA5">Total: '+res.total_iva.toFixed(2)+' €</span>'
+      +'</div>'
+      +'</div>';
+  }).join('');
+}
+
+function syncLinea(id){
+  getLineaData(id);
+  renderLineas();
+  calc();
+}
+
+function plantilla(tipo){
+  var preset = {ops:{},times:{setup:10,cilin:25,rosca:20,talad:15,pieza:45,acab:15}};
+  OPS_DEF.forEach(function(op){ preset.ops[op.id]=false; });
+  if(tipo==='eje'){
+    preset.desc='Eje / vastago'; preset.mat='acero_f114';
+    preset.ops.setup=true; preset.ops.cilin=true; preset.ops.pieza=true;
+    preset.times.setup=10; preset.times.cilin=30; preset.times.pieza=40;
+  } else if(tipo==='buje'){
+    preset.desc='Buje / casquillo'; preset.mat='acero_f114';
+    preset.ops.setup=true; preset.ops.cilin=true; preset.ops.talad=true;
+    preset.times.setup=10; preset.times.cilin=20; preset.times.talad=15;
+  } else if(tipo==='rosca'){
+    preset.desc='Pieza roscada'; preset.mat='acero_f114';
+    preset.ops.setup=true; preset.ops.cilin=true; preset.ops.rosca=true;
+    preset.times.setup=10; preset.times.cilin=20; preset.times.rosca=25;
+  } else if(tipo==='acabado'){
+    preset.desc='Acabado / pulido'; preset.mat='acero_f114';
+    preset.ops.setup=true; preset.ops.acab=true;
+    preset.times.setup=5; preset.times.acab=20;
+  } else if(tipo==='taladro'){
+    preset.desc='Taladrado / mandrinado'; preset.mat='acero_f114';
+    preset.ops.setup=true; preset.ops.talad=true;
+    preset.times.setup=5; preset.times.talad=20;
+  }
+  addLinea(preset);
 }
 
 // BASE DE CLIENTES
@@ -925,45 +1096,336 @@ function abrirModal(idx){
 
 function verPresupuestoHistorial(idx){
   var h = historial[idx];
-  if(!h || !h.snap){
-    alert('Este presupuesto fue generado con una version anterior y no puede recuperarse. Genera uno nuevo.');
+  if(!h || !h.snap || !h.snap.lineasCalc){
+    alert('Este presupuesto fue generado con una version anterior. Genera uno nuevo.');
     return;
   }
-  // Reconstruir _pres desde el snapshot
   var s = h.snap;
-  // Reconstruir filas HTML desde los datos del snapshot
-  var sr = s.r;
-  var sdtoRow = sr.dto.pct>0?'<tr><td colspan="2" style="color:#27500A">Descuento '+sr.dto.label+'</td><td class="r" style="color:#27500A">-'+sr.de.toFixed(2)+' €</td></tr>':'';
-  var surgRow = sr.urg?'<tr><td colspan="2" style="color:#BA7517">Recargo urgencia (+25%)</td><td class="r" style="color:#BA7517">+'+sr.re.toFixed(2)+' €</td></tr>':'';
-  var sfhRow  = sr.fh?'<tr><td colspan="2" style="color:#A32D2D">Recargo fuera horario (+50%)</td><td class="r" style="color:#A32D2D">+'+sr.re.toFixed(2)+' €</td></tr>':'';
-  var sextras = sr.urg?' <b style="color:#BA7517">URGENTE +25%</b>':sr.fh?' <b style="color:#A32D2D">FUERA HORARIO +50%</b>':'';
-  var snotasHtml = s.notas?'<div style="margin-top:5px;font-size:10px;color:#777"><b>Nota:</b> '+s.notas+'</div>':'';
   window._pres = {
-    r: sr,
-    num: h.num,
-    fecha: h.fecha,
-    cli: h.cli,
-    cll: s.cll,
-    desc: h.desc,
-    mat: s.mat,
-    plazo: s.plazo,
-    validez: s.validez,
-    ant: s.ant,
-    tm: s.tm,
-    ops: s.ops,
-    extras: sextras,
-    notas: s.notas,
-    dtoRow: sdtoRow,
-    urgRow: surgRow,
-    fhRow: sfhRow,
-    notasHtml: snotasHtml
+    num:h.num, fecha:h.fecha, cli:h.cli, cll:s.cll,
+    lineasCalc:s.lineasCalc.map(function(lc){
+      return {l:{cant:lc.cant,desc:lc.desc}, desc:lc.desc,
+              matLabel:lc.matLabel, ops:lc.ops, res:lc.res};
+    }),
+    plazo:s.plazo, validez:s.validez, ant:s.ant,
+    notas:s.notas, urg:s.urg, fh:s.fh,
+    totalBase:s.totalBase, totalIva:s.totalIva
   };
-  document.getElementById('pres_render').innerHTML = buildPres();
-  document.getElementById('pres_empty').style.display = 'none';
-  document.getElementById('pres_content').style.display = 'block';
+  document.getElementById('pres_render').innerHTML=buildPres();
+  document.getElementById('pres_empty').style.display='none';
+  document.getElementById('pres_content').style.display='block';
   cerrarModal();
   switchTab('presupuesto');
 }
+
+
+function cerrarModal(){
+  document.getElementById('modal_cli').style.display='none';
+  clienteEditandoIdx=-1;
+}
+
+function actualizarCliente(){
+  if(clienteEditandoIdx<0) return;
+  var nombre = document.getElementById('ec_nombre').value.trim();
+  if(!nombre){ alert('El nombre es obligatorio'); return; }
+  clientes[clienteEditandoIdx] = {
+    id: clientes[clienteEditandoIdx].id,
+    nombre: nombre,
+    tel: document.getElementById('ec_tel').value.trim(),
+    email: document.getElementById('ec_email').value.trim(),
+    nif: document.getElementById('ec_nif').value.trim(),
+    dir: document.getElementById('ec_dir').value.trim(),
+    veh: document.getElementById('ec_veh').value.trim(),
+    notas: document.getElementById('ec_notas').value.trim(),
+    fecha: clientes[clienteEditandoIdx].fecha
+  };
+  guardarClientesLS();
+  cerrarModal();
+  renderClientes();
+}
+
+function eliminarCliente(){
+  if(clienteEditandoIdx<0) return;
+  if(!confirm('Eliminar este cliente?')) return;
+  clientes.splice(clienteEditandoIdx, 1);
+  guardarClientesLS();
+  cerrarModal();
+  renderClientes();
+}
+
+// AJUSTES PERSISTENTES - cargar al inicio
+function cargarAjustes(){
+  var mano = localStorage.getItem('dxf_mano');
+  var margen = localStorage.getItem('dxf_margen');
+  var minimo = localStorage.getItem('dxf_minimo');
+  var minimo_mat = localStorage.getItem('dxf_minimo_mat');
+  if(mano) document.getElementById('mano').value = mano;
+  if(margen) document.getElementById('margen').value = margen;
+  if(minimo) document.getElementById('minimo').value = minimo;
+  if(minimo_mat) document.getElementById('minimo_mat').value = minimo_mat;
+  // Cargar historial guardado
+  try {
+    var h = localStorage.getItem('dxf_historial');
+    var p = localStorage.getItem('dxf_nump');
+    if(h) historial = JSON.parse(h);
+    if(p) numP = parseInt(p);
+  } catch(e) { historial=[]; numP=1; }
+}
+
+function guardarAjustes(){
+  localStorage.setItem('dxf_mano', document.getElementById('mano').value);
+  localStorage.setItem('dxf_margen', document.getElementById('margen').value);
+  localStorage.setItem('dxf_minimo', document.getElementById('minimo').value);
+  localStorage.setItem('dxf_minimo_mat', document.getElementById('minimo_mat').value);
+}
+
+// Guardar ajustes al cambiar cualquier campo de coste
+['mano','margen','minimo','minimo_mat'].forEach(function(id){
+  document.getElementById(id).addEventListener('change', guardarAjustes);
+});
+
+// PLANTILLAS DE TRABAJO
+function plantilla(tipo){
+  // Desmarcar todas las operaciones primero
+  ['setup','cilin','rosca','talad','pieza','acab'].forEach(function(op){
+    document.getElementById('op_'+op).checked = false;
+  });
+  
+  if(tipo === 'eje'){
+    document.getElementById('op_setup').checked = true;
+    document.getElementById('op_cilin').checked = true;
+    document.getElementById('op_pieza').checked = true;
+    document.getElementById('t_setup').value = 10;
+    document.getElementById('t_cilin').value = 30;
+    document.getElementById('t_pieza').value = 40;
+    document.getElementById('desc').value = 'Eje / vastago';
+  } else if(tipo === 'buje'){
+    document.getElementById('op_setup').checked = true;
+    document.getElementById('op_cilin').checked = true;
+    document.getElementById('op_talad').checked = true;
+    document.getElementById('t_setup').value = 10;
+    document.getElementById('t_cilin').value = 20;
+    document.getElementById('t_talad').value = 15;
+    document.getElementById('desc').value = 'Buje / casquillo';
+  } else if(tipo === 'rosca'){
+    document.getElementById('op_setup').checked = true;
+    document.getElementById('op_cilin').checked = true;
+    document.getElementById('op_rosca').checked = true;
+    document.getElementById('t_setup').value = 10;
+    document.getElementById('t_cilin').value = 20;
+    document.getElementById('t_rosca').value = 25;
+    document.getElementById('desc').value = 'Pieza roscada';
+  } else if(tipo === 'acabado'){
+    document.getElementById('op_setup').checked = true;
+    document.getElementById('op_acab').checked = true;
+    document.getElementById('t_setup').value = 5;
+    document.getElementById('t_acab').value = 20;
+    document.getElementById('desc').value = 'Acabado / pulido';
+  } else if(tipo === 'taladro'){
+    document.getElementById('op_setup').checked = true;
+    document.getElementById('op_talad').checked = true;
+    document.getElementById('t_setup').value = 5;
+    document.getElementById('t_talad').value = 20;
+    document.getElementById('desc').value = 'Taladrado / mandrinado';
+  }
+  calc();
+}
+
+// COMPARTIR POR WHATSAPP
+function compartirWhatsApp(){
+  if(!window._pres) return;
+  var d = window._pres;
+  var texto = 'Presupuesto DXFMotorsport ' + d.num + '\n';
+  texto += 'Fecha: ' + d.fecha + '\n\n';
+  d.lineasCalc.forEach(function(lc, i){
+    texto += (i+1)+'. '+(lc.desc||lc.l.desc||'Pieza '+(i+1))+' x'+lc.l.cant+'\n';
+    texto += '   Material: '+lc.matLabel+'\n';
+    texto += '   Subtotal: '+lc.res.total_iva.toFixed(2)+' € (IVA incl.)\n';
+  });
+  texto += '\nBase imponible: ' + d.totalBase.toFixed(2) + ' €\n';
+  texto += 'IVA 21%: ' + (d.totalIva-d.totalBase).toFixed(2) + ' €\n';
+  texto += 'TOTAL: ' + d.totalIva.toFixed(2) + ' €\n\n';
+  if(Number(d.ant)===0) texto += 'Pago unico a la entrega\n';
+  else if(Number(d.ant)===100) texto += 'Pago unico por adelantado\n';
+  else {
+    texto += 'Anticipo (' + d.ant + '%): ' + (d.totalIva*d.ant/100).toFixed(2) + ' €\n';
+    texto += 'Resto: ' + (d.totalIva*(1-d.ant/100)).toFixed(2) + ' €\n';
+  }
+  texto += '\nValido ' + d.validez + ' dias. Plazo: ' + d.plazo;
+  window.open('https://wa.me/?text=' + encodeURIComponent(texto), '_blank');
+}
+
+
+function cargarClientes(){
+  try {
+    var c = localStorage.getItem('dxf_clientes');
+    if(c) clientes = JSON.parse(c);
+  } catch(e){ clientes=[]; }
+}
+
+function guardarClientesLS(){
+  try { localStorage.setItem('dxf_clientes', JSON.stringify(clientes)); } catch(e){}
+}
+
+function guardarCliente(){
+  var nombre = document.getElementById('nc_nombre').value.trim();
+  if(!nombre){ mostrarMsg('nc_msg','El nombre es obligatorio','#FCEBEB','#791F1F'); return; }
+  var cli = {
+    id: Date.now(),
+    nombre: nombre,
+    tel: document.getElementById('nc_tel').value.trim(),
+    email: document.getElementById('nc_email').value.trim(),
+    nif: document.getElementById('nc_nif').value.trim(),
+    dir: document.getElementById('nc_dir').value.trim(),
+    veh: document.getElementById('nc_veh').value.trim(),
+    notas: document.getElementById('nc_notas').value.trim(),
+    fecha: new Date().toLocaleDateString('es-ES')
+  };
+  clientes.unshift(cli);
+  guardarClientesLS();
+  limpiarFormCliente();
+  mostrarMsg('nc_msg','Cliente guardado correctamente','#EAF3DE','#27500A');
+  setTimeout(function(){ document.getElementById('nc_msg').style.display='none'; }, 2500);
+  renderClientes();
+}
+
+function guardarDesdeFormulario(){
+  var nombre = document.getElementById('cli_nombre').value.trim();
+  if(!nombre){ alert('Introduce primero el nombre del cliente'); return; }
+  var cli = {
+    id: Date.now(),
+    nombre: nombre,
+    tel: document.getElementById('cli_contacto').value.trim(),
+    email: '',
+    nif: document.getElementById('cli_nif').value.trim(),
+    dir: document.getElementById('cli_dir').value.trim(),
+    veh: document.getElementById('cli_vehiculo').value.trim(),
+    notas: '',
+    fecha: new Date().toLocaleDateString('es-ES')
+  };
+  // Check if already exists
+  var existe = clientes.find(function(c){ return c.nombre===nombre; });
+  if(existe){ if(!confirm('Ya existe un cliente con ese nombre. Crear de todas formas?')) return; }
+  clientes.unshift(cli);
+  guardarClientesLS();
+  alert('Cliente guardado en la base de datos');
+}
+
+function limpiarFormCliente(){
+  ['nc_nombre','nc_tel','nc_email','nc_nif','nc_dir','nc_veh','nc_notas'].forEach(function(id){
+    document.getElementById(id).value='';
+  });
+}
+
+function mostrarMsg(id, txt, bg, color){
+  var el = document.getElementById(id);
+  el.style.display='block';
+  el.style.background=bg;
+  el.style.color=color;
+  el.textContent=txt;
+}
+
+function renderClientes(){
+  var buscar = (document.getElementById('cli_buscar')||{value:''}).value.toLowerCase();
+  var filtrados = clientes.filter(function(c){
+    return c.nombre.toLowerCase().includes(buscar) ||
+           (c.tel||'').includes(buscar) ||
+           (c.email||'').toLowerCase().includes(buscar) ||
+           (c.veh||'').toLowerCase().includes(buscar);
+  });
+  document.getElementById('cli_count').textContent = clientes.length;
+  var l = document.getElementById('cli_lista');
+  if(!filtrados.length){ l.innerHTML='<div class="empty">'+(buscar?'Sin resultados':'Aun no hay clientes')+'</div>'; return; }
+  l.innerHTML = filtrados.map(function(c, i){
+    var idx = clientes.indexOf(c);
+    var pres = historial.filter(function(h){ return h.cli===c.nombre; }).length;
+    return '<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #f0f0f0">'
+      +'<div style="width:38px;height:38px;border-radius:50%;background:#185FA5;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;flex-shrink:0">'+c.nombre.charAt(0).toUpperCase()+'</div>'
+      +'<div style="flex:1;min-width:0">'
+        +'<div style="font-weight:600;font-size:13px">'+c.nombre+'</div>'
+        +'<div style="font-size:11px;color:#888;margin-top:2px">'+(c.tel?c.tel:'')+(c.tel&&c.veh?' · ':' ')+(c.veh?c.veh:'')+'</div>'
+        +(pres>0?'<div style="font-size:10px;color:#185FA5;margin-top:2px">'+pres+' presupuesto'+(pres>1?'s':'')+'</div>':'')
+      +'</div>'
+      +'<div style="display:flex;gap:6px;flex-shrink:0">'
+        +'<button class="btn sm" onclick="usarCliente('+idx+')" style="background:#EAF3DE;color:#27500A;border-color:#27500A">Usar</button>'
+        +'<button class="btn sm" onclick="abrirModal('+idx+')">Editar</button>'
+      +'</div>'
+      +'</div>';
+  }).join('');
+}
+
+function usarCliente(idx){
+  var c = clientes[idx];
+  document.getElementById('cli_nombre').value = c.nombre||'';
+  document.getElementById('cli_contacto').value = c.tel||'';
+  document.getElementById('cli_nif').value = c.nif||'';
+  document.getElementById('cli_dir').value = c.dir||'';
+  document.getElementById('cli_vehiculo').value = c.veh||'';
+  switchTab('cliente');
+}
+
+function abrirModal(idx){
+  clienteEditandoIdx = idx;
+  var c = clientes[idx];
+  document.getElementById('ec_nombre').value = c.nombre||'';
+  document.getElementById('ec_tel').value = c.tel||'';
+  document.getElementById('ec_email').value = c.email||'';
+  document.getElementById('ec_nif').value = c.nif||'';
+  document.getElementById('ec_dir').value = c.dir||'';
+  document.getElementById('ec_veh').value = c.veh||'';
+  document.getElementById('ec_notas').value = c.notas||'';
+  // Mostrar presupuestos del cliente
+  var pres = historial.filter(function(h){ return h.cli===c.nombre; });
+  var presDiv = document.getElementById('ec_presupuestos');
+  if(pres.length){
+    var total = pres.reduce(function(s,h){ return s+parseFloat(h.total||0); }, 0);
+    presDiv.innerHTML = '<div style="font-size:10px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">Presupuestos ('+pres.length+') — Total facturado: <span style="color:#185FA5">'+total.toFixed(2)+' €</span></div>'
+      + pres.map(function(h){
+          var hidx = historial.indexOf(h);
+          return '<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 10px;background:#f8f8f8;border-radius:8px;margin-bottom:5px;font-size:12px">'
+            +'<div style="flex:1;min-width:0"><span style="font-weight:600;color:#185FA5">'+h.num+'</span>'
+            +(h.urg?' <span style="font-size:9px;background:#FAEEDA;color:#633806;padding:1px 5px;border-radius:99px">urgente</span>':'')
+            +(h.fh?' <span style="font-size:9px;background:#FCEBEB;color:#791F1F;padding:1px 5px;border-radius:99px">f.horario</span>':'')
+            +(h.serie?' <span style="font-size:9px;background:#EAF3DE;color:#27500A;padding:1px 5px;border-radius:99px">serie</span>':'')
+            +'<div style="color:#888;margin-top:2px">'+h.fecha+' · '+h.desc+'</div></div>'
+            +'<div style="display:flex;align-items:center;gap:8px;flex-shrink:0">'
+            +'<div style="font-weight:700;color:#1a1a1a">'+h.total+' €</div>'
+            +'<button class="btn sm" onclick="verPresupuestoHistorial('+hidx+')" style="background:#185FA5;color:#fff;border-color:#185FA5;padding:4px 10px">Ver</button>'
+            +'</div>'
+            +'</div>';
+        }).join('');
+    presDiv.style.display='block';
+  } else {
+    presDiv.innerHTML='<div style="font-size:12px;color:#aaa;padding:8px 0">Sin presupuestos registrados</div>';
+    presDiv.style.display='block';
+  }
+  document.getElementById('modal_cli').style.display='block';
+}
+
+function verPresupuestoHistorial(idx){
+  var h = historial[idx];
+  if(!h || !h.snap || !h.snap.lineasCalc){
+    alert('Este presupuesto fue generado con una version anterior. Genera uno nuevo.');
+    return;
+  }
+  var s = h.snap;
+  window._pres = {
+    num:h.num, fecha:h.fecha, cli:h.cli, cll:s.cll,
+    lineasCalc:s.lineasCalc.map(function(lc){
+      return {l:{cant:lc.cant,desc:lc.desc}, desc:lc.desc,
+              matLabel:lc.matLabel, ops:lc.ops, res:lc.res};
+    }),
+    plazo:s.plazo, validez:s.validez, ant:s.ant,
+    notas:s.notas, urg:s.urg, fh:s.fh,
+    totalBase:s.totalBase, totalIva:s.totalIva
+  };
+  document.getElementById('pres_render').innerHTML=buildPres();
+  document.getElementById('pres_empty').style.display='none';
+  document.getElementById('pres_content').style.display='block';
+  cerrarModal();
+  switchTab('presupuesto');
+}
+
 
 function cerrarModal(){
   document.getElementById('modal_cli').style.display='none';
@@ -1105,6 +1567,7 @@ function compartirWhatsApp(){
 
 cargarClientes();
 cargarAjustes();
+addLinea();
 calc();
 </script>
 </body>
