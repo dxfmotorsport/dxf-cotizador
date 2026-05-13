@@ -256,11 +256,22 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-siz
 
 <div id="tab-trabajo" class="panel">
   <div class="card">
+    <div class="card-title">Plantillas rapidas</div>
+    <div style="display:flex;gap:7px;flex-wrap:wrap">
+      <button class="btn sm" onclick="plantilla('eje')">Eje / Vastago</button>
+      <button class="btn sm" onclick="plantilla('buje')">Buje / Casquillo</button>
+      <button class="btn sm" onclick="plantilla('rosca')">Pieza roscada</button>
+      <button class="btn sm" onclick="plantilla('acabado')">Solo acabado</button>
+      <button class="btn sm" onclick="plantilla('taladro')">Taladrado</button>
+    </div>
+  </div>
+  <div class="card">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
       <div class="card-title" style="margin-bottom:0">Lineas de trabajo</div>
       <button class="btn primary sm" onclick="addLinea()">+ Añadir pieza</button>
     </div>
     <div id="lineas_container"></div>
+    </div>
   </div>
   <div class="card">
     <div class="card-title">Tipo de trabajo</div>
@@ -848,8 +859,23 @@ function renderLineas(){
     return;
   }
   container.innerHTML = lineas.map(function(l, idx){
-    var matOpts = MAT_OPTIONS.map(function(m){
-      return '<option value="'+m[0]+'"'+(l.mat===m[0]?' selected':'')+'>'+m[1]+'</option>';
+    var MAT_GROUPS = [
+      {label:'Aceros', items:['acero_f114','acero_f125','acero_f111','acero_bonificado','acero_inox_430']},
+      {label:'Inoxidables', items:['inox_304','inox_316','inox_303','inox_duplex']},
+      {label:'Aluminios', items:['alu_6061','alu_6063','alu_6068','alu_7075','alu_2024','alu_5083']},
+      {label:'Cobres y latones', items:['bronce','laton','cobre']},
+      {label:'Otros metales', items:['titanio_gr2','titanio_gr5','hierro_gris','zamak']},
+      {label:'Plasticos tecnicos', items:['nylon','delrin','ptfe','peek']},
+      {label:'Otro', items:['otro','cliente']}
+    ];
+    var matMap = {};
+    MAT_OPTIONS.forEach(function(m){ matMap[m[0]]=m[1]; });
+    var matOpts = MAT_GROUPS.map(function(g){
+      var opts = g.items.map(function(id){
+        var label = matMap[id]||id;
+        return '<option value="'+id+'"'+(l.mat===id?' selected':'')+'>'+label+'</option>';
+      }).join('');
+      return '<optgroup label="'+g.label+'">'+opts+'</optgroup>';
     }).join('');
     var opsHtml = OPS_DEF.map(function(op){
       return '<div class="op-row">'
@@ -863,7 +889,7 @@ function renderLineas(){
       +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">'
         +'<span style="font-weight:600;font-size:13px;color:#185FA5">Pieza '+(idx+1)+'</span>'
         +'<div style="display:flex;align-items:center;gap:8px">'
-          +'<span style="font-size:12px;color:#888">'+res.total_iva.toFixed(2)+' € (con IVA)</span>'
+          +'<span style="font-size:12px;color:#888"><span id="linea_total_'+l.id+'">'+res.total_iva.toFixed(2)+' €</span> (con IVA)</span>'
           +(lineas.length>1?'<button class="btn sm red" onclick="removeLinea('+l.id+')">Eliminar</button>':'')
         +'</div>'
       +'</div>'
@@ -879,8 +905,8 @@ function renderLineas(){
       +'<div class="card-title" style="margin-bottom:6px">Operaciones</div>'
       +'<div class="ops-grid">'+opsHtml+'</div>'
       +'<div style="margin-top:8px;padding:8px 10px;background:#E6F1FB;border-radius:8px;font-size:12px;display:flex;justify-content:space-between">'
-        +'<span style="color:#0C447C">'+res.mins+' min · Base: '+res.unit.toFixed(2)+' €/ud · IVA: '+res.iva.toFixed(2)+' €/ud</span>'
-        +'<span style="font-weight:700;color:#185FA5">Total: '+res.total_iva.toFixed(2)+' €</span>'
+        +'<span id="linea_info_'+l.id+'" style="color:#0C447C">'+res.mins+' min · Base: '+res.unit.toFixed(2)+' €/ud · IVA: '+res.iva.toFixed(2)+' €/ud</span>'
+        +'<span id="linea_total_'+l.id+'" style="font-weight:700;color:#185FA5">Total: '+res.total_iva.toFixed(2)+' €</span>'
       +'</div>'
       +'</div>';
   }).join('');
@@ -888,9 +914,91 @@ function renderLineas(){
 
 function syncLinea(id){
   getLineaData(id);
-  renderLineas();
+  updateLineaTotal(id);
   calc();
 }
+
+function updateLineaTotal(id){
+  var l = lineas.find(function(l){ return l.id===id; });
+  if(!l) return;
+  var res = calcLinea(l);
+  var totalEl = document.getElementById('linea_total_'+id);
+  if(totalEl) totalEl.textContent = res.total_iva.toFixed(2)+' €';
+  var infoEl = document.getElementById('linea_info_'+id);
+  if(infoEl) infoEl.textContent = res.mins+' min · Base: '+res.unit.toFixed(2)+' €/ud · IVA: '+res.iva.toFixed(2)+' €/ud';
+}
+
+// CLIENTES - funciones de persistencia
+var clientes = [];
+
+function cargarClientes(){
+  try{
+    var c=localStorage.getItem('dxf_clientes');
+    if(c) clientes=JSON.parse(c);
+  }catch(e){clientes=[];}
+}
+
+function guardarClientesLS(){
+  try{localStorage.setItem('dxf_clientes',JSON.stringify(clientes));}catch(e){}
+}
+
+function mostrarMsg(id,txt,bg,color){
+  var el=document.getElementById(id);
+  if(!el) return;
+  el.style.display='block';
+  el.style.background=bg;
+  el.style.color=color;
+  el.textContent=txt;
+}
+
+function guardarCliente(){
+  var nombre=document.getElementById('nc_nombre').value.trim();
+  if(!nombre){mostrarMsg('nc_msg','El nombre es obligatorio','#FCEBEB','#791F1F');return;}
+  var cli={
+    id:Date.now(),
+    nombre:nombre,
+    tel:document.getElementById('nc_tel').value.trim(),
+    email:document.getElementById('nc_email').value.trim(),
+    nif:document.getElementById('nc_nif').value.trim(),
+    dir:document.getElementById('nc_dir').value.trim(),
+    veh:document.getElementById('nc_veh').value.trim(),
+    notas:document.getElementById('nc_notas').value.trim(),
+    fecha:new Date().toLocaleDateString('es-ES')
+  };
+  clientes.unshift(cli);
+  guardarClientesLS();
+  limpiarFormCliente();
+  mostrarMsg('nc_msg','Cliente guardado correctamente','#EAF3DE','#27500A');
+  setTimeout(function(){var el=document.getElementById('nc_msg');if(el)el.style.display='none';},2500);
+  renderClientes();
+}
+
+// AJUSTES PERSISTENTES
+function cargarAjustes(){
+  var mano=localStorage.getItem('dxf_mano');
+  var margen=localStorage.getItem('dxf_margen');
+  var minimo=localStorage.getItem('dxf_minimo');
+  var minimo_mat=localStorage.getItem('dxf_minimo_mat');
+  if(mano) document.getElementById('mano').value=mano;
+  if(margen) document.getElementById('margen').value=margen;
+  if(minimo) document.getElementById('minimo').value=minimo;
+  if(minimo_mat) document.getElementById('minimo_mat').value=minimo_mat;
+  // Cargar historial
+  try{
+    var h=localStorage.getItem('dxf_historial');
+    var p=localStorage.getItem('dxf_nump');
+    if(h) historial=JSON.parse(h);
+    if(p) numP=parseInt(p);
+  }catch(e){historial=[];numP=1;}
+}
+
+function guardarAjustes(){
+  localStorage.setItem('dxf_mano',document.getElementById('mano').value);
+  localStorage.setItem('dxf_margen',document.getElementById('margen').value);
+  localStorage.setItem('dxf_minimo',document.getElementById('minimo').value);
+  localStorage.setItem('dxf_minimo_mat',document.getElementById('minimo_mat').value);
+}
+
 
 function guardarDesdeFormulario(){
   var nombre = document.getElementById('cli_nombre').value.trim();
@@ -920,13 +1028,6 @@ function limpiarFormCliente(){
   });
 }
 
-function mostrarMsg(id, txt, bg, color){
-  var el = document.getElementById(id);
-  el.style.display='block';
-  el.style.background=bg;
-  el.style.color=color;
-  el.textContent=txt;
-}
 
 function renderClientes(){
   var buscar = (document.getElementById('cli_buscar')||{value:''}).value.toLowerCase();
@@ -1065,30 +1166,7 @@ function eliminarCliente(){
 }
 
 // AJUSTES PERSISTENTES - cargar al inicio
-function cargarAjustes(){
-  var mano = localStorage.getItem('dxf_mano');
-  var margen = localStorage.getItem('dxf_margen');
-  var minimo = localStorage.getItem('dxf_minimo');
-  var minimo_mat = localStorage.getItem('dxf_minimo_mat');
-  if(mano) document.getElementById('mano').value = mano;
-  if(margen) document.getElementById('margen').value = margen;
-  if(minimo) document.getElementById('minimo').value = minimo;
-  if(minimo_mat) document.getElementById('minimo_mat').value = minimo_mat;
-  // Cargar historial guardado
-  try {
-    var h = localStorage.getItem('dxf_historial');
-    var p = localStorage.getItem('dxf_nump');
-    if(h) historial = JSON.parse(h);
-    if(p) numP = parseInt(p);
-  } catch(e) { historial=[]; numP=1; }
-}
 
-function guardarAjustes(){
-  localStorage.setItem('dxf_mano', document.getElementById('mano').value);
-  localStorage.setItem('dxf_margen', document.getElementById('margen').value);
-  localStorage.setItem('dxf_minimo', document.getElementById('minimo').value);
-  localStorage.setItem('dxf_minimo_mat', document.getElementById('minimo_mat').value);
-}
 
 // Guardar ajustes al cambiar cualquier campo de coste
 ['mano','margen','minimo','minimo_mat'].forEach(function(id){
