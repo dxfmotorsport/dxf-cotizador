@@ -843,6 +843,7 @@ function calcLinea(l){
 }
 
 function aplicarPlantilla(id, tipo){
+  id=Number(id);
   var l = lineas.find(function(l){ return l.id===id; });
   if(!l) return;
   // Reset all ops
@@ -927,11 +928,11 @@ function renderLineas(){
       +'</div>'
       +'<div class="card-title" style="margin-bottom:6px;margin-top:10px">Plantilla rapida</div>'
       +'<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">'
-        +'<button class="btn sm" onclick="aplicarPlantilla('+l.id+','eje')">Eje</button>'
-        +'<button class="btn sm" onclick="aplicarPlantilla('+l.id+','buje')">Buje</button>'
-        +'<button class="btn sm" onclick="aplicarPlantilla('+l.id+','rosca')">Roscado</button>'
-        +'<button class="btn sm" onclick="aplicarPlantilla('+l.id+','acabado')">Acabado</button>'
-        +'<button class="btn sm" onclick="aplicarPlantilla('+l.id+','taladro')">Taladrado</button>'
+        +'<button class="btn sm" data-lid="'+l.id+'" data-t="eje" onclick="aplicarPlantilla(+this.dataset.lid,this.dataset.t)">Eje</button>'
+        +'<button class="btn sm" data-lid="'+l.id+'" data-t="buje" onclick="aplicarPlantilla(+this.dataset.lid,this.dataset.t)">Buje</button>'
+        +'<button class="btn sm" data-lid="'+l.id+'" data-t="rosca" onclick="aplicarPlantilla(+this.dataset.lid,this.dataset.t)">Roscado</button>'
+        +'<button class="btn sm" data-lid="'+l.id+'" data-t="acabado" onclick="aplicarPlantilla(+this.dataset.lid,this.dataset.t)">Acabado</button>'
+        +'<button class="btn sm" data-lid="'+l.id+'" data-t="taladro" onclick="aplicarPlantilla(+this.dataset.lid,this.dataset.t)">Taladrado</button>'
       +'</div>'
       +'<div class="card-title" style="margin-bottom:6px">Operaciones</div>'
       +'<div class="ops-grid">'+opsHtml+'</div>'
