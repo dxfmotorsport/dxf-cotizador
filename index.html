@@ -1229,15 +1229,23 @@ function compartirWhatsApp(){
 }
 
 
-cargarClientes();
-cargarAjustes();
-addLinea();
-calc();
-// Init: hide all panels, show only costes
+try {
+  cargarClientes();
+} catch(e){ console.error('cargarClientes error:', e); }
+try {
+  cargarAjustes();
+} catch(e){ console.error('cargarAjustes error:', e); }
+// Init panels FIRST before addLinea renders anything
 ['costes','cliente','trabajo','resultado','rentabilidad','historial','presupuesto','clientes'].forEach(function(tab){
   var el=document.getElementById('tab-'+tab);
   if(el) el.style.display = tab==='costes' ? 'block' : 'none';
 });
+try {
+  addLinea();
+} catch(e){ console.error('addLinea error:', e); }
+try {
+  calc();
+} catch(e){ console.error('calc error:', e); }
 </script>
 </body>
 </html>
