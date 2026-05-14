@@ -452,11 +452,14 @@ function switchTab(id){
   // Update nav buttons
   var btns=document.querySelectorAll('.nav-btn');
   for(var i=0;i<btns.length;i++) btns[i].classList.toggle('active',tabs[i]===id);
-  // Hide all panels inside layout
-  var panels=document.querySelectorAll('.panel');
-  for(var i=0;i<panels.length;i++) panels[i].classList.remove('active');
-  var panel = document.getElementById('tab-'+id);
-  if(panel) panel.classList.add('active');
+  // Hide ALL panels with inline style
+  tabs.forEach(function(tab){
+    var el=document.getElementById('tab-'+tab);
+    if(el) el.style.display='none';
+  });
+  // Show only the selected panel
+  var panel=document.getElementById('tab-'+id);
+  if(panel) panel.style.display='block';
   if(id==='rentabilidad') simular();
   if(id==='historial') renderHist();
   if(id==='trabajo') renderLineas();
@@ -1230,6 +1233,11 @@ cargarClientes();
 cargarAjustes();
 addLinea();
 calc();
+// Init: hide all panels, show only costes
+['costes','cliente','trabajo','resultado','rentabilidad','historial','presupuesto','clientes'].forEach(function(tab){
+  var el=document.getElementById('tab-'+tab);
+  if(el) el.style.display = tab==='costes' ? 'block' : 'none';
+});
 </script>
 </body>
 </html>
