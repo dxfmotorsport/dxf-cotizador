@@ -12,8 +12,8 @@
 <meta name="theme-color" content="#111111">
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-html,body{height:100%;overflow:hidden}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;background:#f0f0f0;color:#1a1a1a;display:flex;flex-direction:column}
+html{height:-webkit-fill-available}html,body{height:100%;overflow:hidden}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;background:#f0f0f0;color:#1a1a1a;display:flex;flex-direction:column;min-height:100vh;min-height:-webkit-fill-available}
 .topbar{background:#111;padding:10px 16px;display:flex;align-items:center;gap:10px;flex-shrink:0;min-height:52px}
 .topbar img{width:32px;height:32px;object-fit:contain;border-radius:6px;flex-shrink:0}
 .topbar-title{color:#fff;font-size:15px;font-weight:600;letter-spacing:.02em}
@@ -21,12 +21,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-siz
 /* NAV HORIZONTAL MOVIL */
 .nav{background:#1a1a1a;display:flex;flex-direction:row;flex-shrink:0;overflow-x:auto;-webkit-overflow-scrolling:touch}
 .nav::-webkit-scrollbar{display:none}
-.nav-btn{flex:0 0 auto;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:7px 14px;color:#888;font-size:10px;line-height:1.2;cursor:pointer;border:none;background:transparent;white-space:nowrap;transition:color .15s,background .15s}
+.nav-btn{flex:0 0 auto;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:7px 14px;color:#888;font-size:10px;line-height:1.2;cursor:pointer;border:none;background:transparent;white-space:nowrap;transition:color .15s,background .15s;touch-action:manipulation;-webkit-user-select:none;user-select:none}
 .nav-btn .ico{font-size:17px}
 .nav-btn.active{color:#fff;background:#185FA5}
 /* CONTENIDO */
-.layout{display:block;flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:12px}
-.panel{display:none!important}.panel.active{display:block!important}
+.layout{display:block;flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:12px;overscroll-behavior:contain}
+.panel{display:none}.panel.active{display:block}
 .card{background:#fff;border-radius:12px;padding:14px 16px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,.08)}
 .card-title{font-size:10px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px}
 .g2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
@@ -147,11 +147,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-siz
 @media(min-width:700px){
   body{display:flex;flex-direction:column;height:100vh;overflow:hidden}
   .topbar{flex-shrink:0;width:100%}
-  .main-area{display:flex;flex:1;overflow:hidden}
+  .main-area{display:flex;flex:1;overflow:hidden;width:100%;min-width:0}
   .nav{flex-direction:column;width:170px;flex-shrink:0;height:100%;overflow-y:auto;overflow-x:hidden}
   .nav-btn{flex-direction:row;gap:10px;padding:12px 16px;font-size:13px;justify-content:flex-start;min-width:0}
   .nav-btn .ico{font-size:16px}
-  .layout{flex:1;height:100%;padding:18px;overflow-y:auto;-webkit-overflow-scrolling:touch;min-width:0}
+  .layout{flex:1;height:100%;padding:18px;overflow-y:auto;-webkit-overflow-scrolling:touch;min-width:0;min-height:0}
   .metrics{grid-template-columns:repeat(3,1fr)}
   .rent-grid{grid-template-columns:repeat(4,1fr)}
   .ops-grid{grid-template-columns:1fr 1fr}
@@ -262,7 +262,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-siz
       <button class="btn primary sm" onclick="addLinea()">+ Añadir pieza</button>
     </div>
     <div id="lineas_container"></div>
-    </div>
   </div>
   <div class="card">
     <div class="card-title">Tipo de trabajo</div>
@@ -452,19 +451,19 @@ function switchTab(id){
   // Update nav buttons
   var btns=document.querySelectorAll('.nav-btn');
   for(var i=0;i<btns.length;i++) btns[i].classList.toggle('active',tabs[i]===id);
-  // Hide ALL panels with inline style
+  // Hide ALL panels
   tabs.forEach(function(tab){
     var el=document.getElementById('tab-'+tab);
-    if(el) el.style.display='none';
+    if(el){ el.style.display='none'; el.classList.remove('active'); }
   });
   // Show only the selected panel
   var panel=document.getElementById('tab-'+id);
-  if(panel) panel.style.display='block';
+  if(panel){ panel.style.display='block'; panel.classList.add('active'); }
   if(id==='rentabilidad') simular();
   if(id==='historial') renderHist();
   if(id==='trabajo') renderLineas();
   if(id==='clientes') renderClientes();
-  document.querySelector('.layout').scrollTop=0;
+  var layoutEl=document.querySelector('.layout'); if(layoutEl) layoutEl.scrollTop=0;
 }
 
 function toggleRec(tipo){
@@ -910,7 +909,7 @@ function renderLineas(){
       +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">'
         +'<span style="font-weight:600;font-size:13px;color:#185FA5">Pieza '+(idx+1)+'</span>'
         +'<div style="display:flex;align-items:center;gap:8px">'
-          +'<span style="font-size:12px;color:#888"><span id="linea_total_'+l.id+'">'+res.total_iva.toFixed(2)+' €</span> (con IVA)</span>'
+          +'<span style="font-size:12px;color:#888"><span id="linea_precio_hdr_'+l.id+'">'+res.total_iva.toFixed(2)+' €</span> (con IVA)</span>'
           +(lineas.length>1?'<button class="btn sm red" onclick="removeLinea('+l.id+')">Eliminar</button>':'')
         +'</div>'
       +'</div>'
@@ -952,7 +951,9 @@ function updateLineaTotal(id){
   if(!l) return;
   var res = calcLinea(l);
   var totalEl = document.getElementById('linea_total_'+id);
-  if(totalEl) totalEl.textContent = res.total_iva.toFixed(2)+' €';
+  if(totalEl) totalEl.textContent = 'Total: '+res.total_iva.toFixed(2)+' €';
+  var headerEl = document.getElementById('linea_precio_hdr_'+id);
+  if(headerEl) headerEl.textContent = res.total_iva.toFixed(2)+' €';
   var infoEl = document.getElementById('linea_info_'+id);
   if(infoEl) infoEl.textContent = res.mins+' min · Base: '+res.unit.toFixed(2)+' €/ud · IVA: '+res.iva.toFixed(2)+' €/ud';
 }
@@ -1238,7 +1239,10 @@ try {
 // Init panels FIRST before addLinea renders anything
 ['costes','cliente','trabajo','resultado','rentabilidad','historial','presupuesto','clientes'].forEach(function(tab){
   var el=document.getElementById('tab-'+tab);
-  if(el) el.style.display = tab==='costes' ? 'block' : 'none';
+  if(el){
+    el.style.display = tab==='costes' ? 'block' : 'none';
+    if(tab==='costes') el.classList.add('active'); else el.classList.remove('active');
+  }
 });
 try {
   addLinea();
