@@ -193,11 +193,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-siz
       <div class="field"><label>NIF / CIF</label><input type="text" id="emp_nif" placeholder="B12345678" oninput="guardarEmpresa()"></div>
     </div>
     <div class="g2" style="margin-bottom:10px">
-      <div class="field"><label>Web</label><input type="text" id="emp_web" placeholder="dxfmotorsport.com" oninput="guardarEmpresa()"></div>
-      <div class="field"><label>Telefono</label><input type="text" id="emp_tel" placeholder="612 345 678" oninput="guardarEmpresa()"></div>
+      <div class="field"><label>Web</label><input type="text" id="emp_web" placeholder="dxfmotorsport.com" inputmode="url" oninput="guardarEmpresa()"></div>
+      <div class="field"><label>Telefono</label><input type="text" id="emp_tel" placeholder="612 345 678" inputmode="tel" oninput="guardarEmpresa()"></div>
     </div>
     <div class="g2" style="margin-bottom:10px">
-      <div class="field"><label>Email</label><input type="text" id="emp_email" placeholder="info@dxfmotorsport.com" oninput="guardarEmpresa()"></div>
+      <div class="field"><label>Email</label><input type="text" id="emp_email" placeholder="info@dxfmotorsport.com" inputmode="email" oninput="guardarEmpresa()"></div>
       <div class="field"><label>Localidad</label><input type="text" id="emp_loc" placeholder="Naron, Galicia" oninput="guardarEmpresa()"></div>
     </div>
     <div class="field" style="margin-bottom:10px"><label>Direccion completa</label><input type="text" id="emp_dir" placeholder="Poligono Industrial..." oninput="guardarEmpresa()"></div>
@@ -205,24 +205,22 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-siz
   </div>
   <div class="card">
     <div class="card-title">Logo de la empresa</div>
-    <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
-      <div id="emp_logo_preview" style="width:72px;height:72px;border-radius:10px;border:1px solid #eee;display:flex;align-items:center;justify-content:center;background:#f8f8f8;flex-shrink:0;overflow:hidden">
-        <span style="font-size:11px;color:#bbb;text-align:center;line-height:1.4">Sin<br>logo</span>
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div style="display:flex;align-items:flex-start;gap:14px">
+        <div id="emp_logo_preview" style="width:80px;height:80px;border-radius:10px;border:2px dashed #ddd;display:flex;align-items:center;justify-content:center;background:#f8f8f8;flex-shrink:0;overflow:hidden">
+          <span style="font-size:10px;color:#bbb;text-align:center;line-height:1.5;padding:4px">Sin<br>logo</span>
+        </div>
+        <div style="flex:1;min-width:0;font-size:11px;color:#aaa;line-height:1.6;padding-top:4px">PNG, JPG o SVG · Max. 2 MB<br>Se guarda en este dispositivo y aparece en todos los presupuestos.</div>
       </div>
-      <div style="flex:1;min-width:180px">
-        <label style="display:inline-block;padding:9px 16px;background:#185FA5;color:#fff;border-radius:9px;font-size:13px;font-weight:600;cursor:pointer;margin-bottom:6px">
-          Subir logo
-          <input type="file" id="emp_logo_input" accept="image/*" style="display:none" onchange="cargarLogo(this)">
-        </label>
-        <div style="font-size:11px;color:#aaa;line-height:1.5">PNG, JPG o SVG. Se guardara en el dispositivo.<br>Aparecera en todos los presupuestos.</div>
-        <button id="emp_logo_del" class="btn sm red" style="display:none;margin-top:8px" onclick="borrarLogo()">Eliminar logo</button>
-      </div>
+      <input type="file" id="emp_logo_input" accept="image/*" style="display:none" onchange="cargarLogo(this)">
+      <button class="btn primary" style="width:100%;touch-action:manipulation;font-size:13px" onclick="document.getElementById('emp_logo_input').click()">&#128247; Subir logo</button>
+      <button id="emp_logo_del" class="btn sm red" style="display:none;touch-action:manipulation" onclick="borrarLogo()">Eliminar logo</button>
     </div>
   </div>
-  <div class="card" style="background:#EAF3DE;border:1px solid #c3e6c3">
-    <div style="display:flex;align-items:center;gap:10px">
-      <span style="font-size:20px">&#10003;</span>
-      <span style="font-size:12px;color:#27500A">Los datos se guardan automaticamente en este dispositivo y se usan en todos los presupuestos generados.</span>
+  <div class="card" style="background:#EAF3DE;border:1px solid #c3e6c3;padding:12px 14px">
+    <div style="display:flex;align-items:flex-start;gap:8px">
+      <span style="font-size:16px;flex-shrink:0;line-height:1.4">&#10003;</span>
+      <span style="font-size:12px;color:#27500A;line-height:1.5">Datos guardados automaticamente en este dispositivo. Se usan en todos los presupuestos.</span>
     </div>
   </div>
 </div>
