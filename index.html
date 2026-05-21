@@ -640,7 +640,15 @@ function initSupabase(){
   }
 
   try{
-    _supa = supabase.createClient(SUPA_URL, SUPA_KEY);
+    _supa = supabase.createClient(SUPA_URL, SUPA_KEY, {
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: true,
+        storage: window.localStorage,
+        storageKey: 'sb-rajzjjovoeksrwpducwz-auth-token'
+      }
+    });
   }catch(e){
     console.error('Supabase init error:', e);
     activarModoLocal(false);
@@ -972,7 +980,18 @@ function cargarDesdeSupa(){
   if(_modoLocal || !_supa || !_user) return;
   setSyncDot('syncing');
   console.log('[SYNC] Cargando datos para user:', _user.id);
-  _supa.from('datos_usuario')
+  // Refrescar sesión antes de hacer queries
+  _supa.auth.getSession().then(function(sess){
+    if(sess.data && sess.data.session){
+      console.log('[SYNC] Token OK, haciendo query...');
+    } else {
+      console.warn('[SYNC] Sin sesión activa');
+      setSyncDot('error');
+      return;
+    }
+  });
+  getSupaAuth(function(client){
+  client.from('datos_usuario')
     .select('*')
     .eq('user_id', _user.id)
     .single()
@@ -1018,14 +1037,29 @@ function cargarDesdeSupa(){
     });
 }
 
+function getSupaAuth(callback){
+  // Obtener sesión activa y pasarla al callback con cliente autenticado
+  _supa.auth.getSession().then(function(res){
+    var token = res.data && res.data.session ? res.data.session.access_token : null;
+    if(!token){ setSyncDot('error'); console.error('[SYNC] Sin token'); return; }
+    // Crear cliente con el token explícito
+    var client = supabase.createClient(SUPA_URL, SUPA_KEY, {
+      global: { headers: { Authorization: 'Bearer ' + token } },
+      auth: { persistSession: false }
+    });
+    callback(client);
+  });
+}
+
 function subirDatosLocales(){
   if(_modoLocal || !_supa || !_user) return;
   setSyncDot('syncing');
   var payload = construirPayload();
   console.log('[SYNC] Subiendo datos para user:', _user.id);
 
+  getSupaAuth(function(client){
   // Primero comprobar si existe la fila
-  _supa.from('datos_usuario')
+  client.from('datos_usuario')
     .select('user_id')
     .eq('user_id', _user.id)
     .single()
@@ -1033,7 +1067,7 @@ function subirDatosLocales(){
       if(check.error && check.error.code === 'PGRST116'){
         // No existe → INSERT
         console.log('[SYNC] Primera vez → INSERT');
-        return _supa.from('datos_usuario').insert(payload);
+        return client.from('datos_usuario').insert(payload);
       } else if(check.error){
         var ce = check.error.message || check.error.code || JSON.stringify(check.error);
         console.error('[SYNC] Error al verificar fila:', ce);
@@ -1042,7 +1076,7 @@ function subirDatosLocales(){
       } else {
         // Ya existe → UPDATE
         console.log('[SYNC] Ya existe → UPDATE');
-        return _supa.from('datos_usuario')
+        return client.from('datos_usuario')
           .update(payload)
           .eq('user_id', _user.id);
       }
@@ -1065,6 +1099,7 @@ function subirDatosLocales(){
       console.error('[SYNC] Catch:', msg);
       mostrarToast('Sync error: ' + msg, '#f87171');
     });
+  }); // getSupaAuth
 }
 
 // Toast helper para errores visibles
