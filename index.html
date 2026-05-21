@@ -628,7 +628,8 @@ var _supa = null;
 var _user = null;
 var _syncTimeout = null;
 var _realtimeChannel = null;
-var _lastSyncTs = 0; // timestamp del último sync para evitar bucles
+var _lastSyncTs = 0; // timestamp del último sync (subida)
+var _lastLoadTs = 0;  // timestamp de la última carga
 var _loginStep = 'email'; // 'email' | 'password'
 
 var _modoLocal = false;
@@ -650,11 +651,15 @@ function initSupabase(){
   }
 
   // Escuchar cambios de sesion
+  var _yaInicializado = false;
   _supa.auth.onAuthStateChange(function(event, session){
     if(event === 'SIGNED_IN' && session && session.user){
+      if(_yaInicializado && _user && _user.id === session.user.id) return; // evitar doble init
+      _yaInicializado = true;
       _user = session.user;
       comprobarAprobacion(session.user);
     } else if(event === 'SIGNED_OUT'){
+      _yaInicializado = false;
       _user = null;
       _modoLocal = false;
       mostrarLogin();
@@ -970,7 +975,8 @@ function toggleUserMenu(){
 document.addEventListener('visibilitychange', function(){
   if(document.visibilityState === 'visible' && !_modoLocal && _supa && _user){
     var ahora = Date.now();
-    if(ahora - _lastSyncTs > 10000){ // solo si no hemos sincronizado en los últimos 10s
+    var tiempoUltimoSync = Math.max(_lastSyncTs, _lastLoadTs||0);
+    if(ahora - tiempoUltimoSync > 8000){
       cargarDesdeSupa();
     }
   }
@@ -1006,6 +1012,7 @@ function setSyncDot(state){
 
 // ── Fetch helper con token ───────────────────────
 function syncFetch(method, body){
+  if(!_user) return Promise.reject(new Error('Sin usuario'));
   return _supa.auth.getSession().then(function(res){
     var token = res.data&&res.data.session ? res.data.session.access_token : null;
     var url = SUPA_URL + '/rest/v1/datos_usuario';
@@ -1037,7 +1044,6 @@ function cargarDesdeSupa(){
     if(!res.ok){ throw new Error('HTTP ' + res.status); }
     return res.json();
   }).then(function(rows){
-    setSyncDot('ok');
     if(!Array.isArray(rows) || rows.length === 0){
       // Primera vez en este dispositivo — subir lo que haya local
       console.log('[SYNC] Sin datos en nube, subiendo local...');
@@ -1045,6 +1051,7 @@ function cargarDesdeSupa(){
       return;
     }
     var d = rows[0];
+    _lastLoadTs = Date.now();
     console.log('[SYNC] Datos recibidos de la nube OK');
     // Aplicar TODOS los datos de la nube sin condiciones
     if(d.empresa && typeof d.empresa === 'object'){
@@ -1088,21 +1095,27 @@ function cargarDesdeSupa(){
 
 // ── Subir datos locales → nube ────────────────────
 var _subiendo = false;
+var _subiendoTimeout = null;
 function subirDatosLocales(){
   if(_modoLocal || !_supa || !_user) return;
   if(_subiendo) return; // evitar llamadas simultáneas
   _subiendo = true;
+  // Timeout de seguridad: si en 15s no termina, liberar el flag
+  clearTimeout(_subiendoTimeout);
+  _subiendoTimeout = setTimeout(function(){ _subiendo = false; }, 15000);
   setSyncDot('syncing');
   var payload = construirPayload();
   syncFetch('POST', payload).then(function(res){
     if(res.ok){
       _subiendo = false;
+      clearTimeout(_subiendoTimeout);
       _lastSyncTs = Date.now();
       setSyncDot('ok');
       console.log('[SYNC] Subida OK');
     } else {
       res.text().then(function(txt){
         _subiendo = false;
+        clearTimeout(_subiendoTimeout);
         setSyncDot('error');
         console.error('[SYNC] Error subida:', res.status, txt);
         // Error silencioso — el sync dot rojo ya indica el problema
@@ -1111,6 +1124,7 @@ function subirDatosLocales(){
   }).catch(function(e){
     setSyncDot('error');
     _subiendo = false;
+    clearTimeout(_subiendoTimeout);
     console.error('[SYNC] Error red:', e);
   });
 }
@@ -1220,7 +1234,8 @@ function guardarEmpresa(){
   try{
     var save={nombre:empresa.nombre,nif:empresa.nif,web:empresa.web,tel:empresa.tel,
               email:empresa.email,loc:empresa.loc,dir:empresa.dir,legal:empresa.legal,
-              color:empresa.color,eslogan:empresa.eslogan,prefijo:empresa.prefijo};
+              color:empresa.color,eslogan:empresa.eslogan,prefijo:empresa.prefijo,
+              logo_url:empresa.logo_url||''};
     localStorage.setItem('dxf_empresa',JSON.stringify(save));
   }catch(e){}
   actualizarTopbar();
@@ -1278,7 +1293,6 @@ function subirLogoSupa(file){
   _supa.auth.getSession().then(function(res){
     var token=res.data&&res.data.session?res.data.session.access_token:null;
     if(!token) return;
-    var path='logos/'+_user.id+'/logo';
     var ext=file.name.split('.').pop().toLowerCase()||'png';
     // Subir al bucket "logos" vía REST
     fetch(SUPA_URL+'/storage/v1/object/logos/'+_user.id+'/logo.'+ext,{
@@ -1339,7 +1353,6 @@ function mostrarLogoPreview(src){
 
 function borrarLogo(){
   if(!confirm('Eliminar el logo?')) return;
-  empresa.logo='';
   empresa.logo='';
   empresa.logo_url='';
   try{localStorage.removeItem('dxf_empresa_logo');}catch(e){}
