@@ -802,17 +802,23 @@ function initRealtime(){
         config: { broadcast: { self: false } }
       })
       .on('postgres_changes', {
-        event: 'UPDATE',
+        event: '*',
         schema: 'public',
         table: 'datos_usuario',
         filter: 'user_id=eq.' + _user.id
       }, function(payload){
         var ahora = Date.now();
-        if(ahora - _lastSyncTs < 3000) return;
-        console.log('[REALTIME] Cambio detectado, recargando...');
-        setSyncDot('syncing');
-        cargarDesdeSupa();
-        mostrarToastOk('✓ Datos actualizados desde otro dispositivo');
+        // Ignorar si nosotros mismos acabamos de subir (evita bucle)
+        if(ahora - _lastSyncTs < 5000){
+          console.log('[REALTIME] Ignorando evento propio');
+          return;
+        }
+        console.log('[REALTIME] Cambio desde otro dispositivo, recargando...');
+        // Pequeño delay para que Supabase haya procesado el cambio
+        setTimeout(function(){
+          cargarDesdeSupa();
+          mostrarToastOk('✓ Sincronizado desde otro dispositivo');
+        }, 300);
       })
       .subscribe(function(status, err){
         console.log('[REALTIME] Estado:', status, err||'');
@@ -961,7 +967,10 @@ function toggleUserMenu(){
 // Recargar datos cuando el usuario vuelve a la pestaña
 document.addEventListener('visibilitychange', function(){
   if(document.visibilityState === 'visible' && !_modoLocal && _supa && _user){
-    cargarDesdeSupa();
+    var ahora = Date.now();
+    if(ahora - _lastSyncTs > 10000){ // solo si no hemos sincronizado en los últimos 10s
+      cargarDesdeSupa();
+    }
   }
 });
 function cerrarUserMenu(){
@@ -993,106 +1002,93 @@ function setSyncDot(state){
 //   user_id (text PK), empresa (jsonb), ajustes (jsonb),
 //   historial (jsonb), clientes (jsonb), nump (int), updated_at (timestamptz)
 
-function cargarDesdeSupa(){
-  if(_modoLocal || !_supa || !_user) return;
-  setSyncDot('syncing');
-  console.log('[SYNC] Cargando datos para user:', _user.id);
-  syncFetch('GET').then(function(res){
-    return res.json();
-  }).then(function(rows){
-    if(!Array.isArray(rows) || rows.length === 0){
-      setSyncDot('ok');
-      if(historial.length > 0 || clientes.length > 0) subirDatosLocales();
-      return;
-    }
-    var d = rows[0];
-    console.log('[SYNC] Datos cargados OK');
-    if(d.empresa){ Object.assign(empresa, d.empresa); aplicarEmpresaAlForm(); actualizarTopbar(); }
-    if(d.ajustes){ aplicarAjustes(d.ajustes); }
-    if(d.historial && Array.isArray(d.historial) && d.historial.length >= historial.length){
-      historial = d.historial;
-    }
-    if(d.clientes && Array.isArray(d.clientes) && d.clientes.length >= clientes.length){
-      clientes = d.clientes;
-    }
-    if(d.nump && d.nump > numP){ numP = d.nump; }
-    var logoLocal = localStorage.getItem('dxf_empresa_logo');
-    if(logoLocal){ empresa.logo = logoLocal; actualizarTopbar(); }
-    renderHist();
-    renderClientes();
-    calc();
-    setSyncDot('ok');
-    if(d.historial && historial.length > d.historial.length){
-      setTimeout(subirDatosLocales, 500);
-    }
-  }).catch(function(e){
-    setSyncDot('error');
-    console.error('[SYNC] Carga error:', e);
-    mostrarToast('Error al cargar datos', '#f87171');
-  });
-}
-
+// ── Fetch helper con token ───────────────────────
 function syncFetch(method, body){
-  // Fetch directo a Supabase REST API con token explícito
   return _supa.auth.getSession().then(function(res){
-    var token = res.data && res.data.session ? res.data.session.access_token : null;
+    var token = res.data&&res.data.session ? res.data.session.access_token : null;
     var url = SUPA_URL + '/rest/v1/datos_usuario';
     var headers = {
       'apikey': SUPA_KEY,
-      'Content-Type': 'application/json',
-      'Prefer': 'return=minimal'
+      'Content-Type': 'application/json'
     };
     if(token) headers['Authorization'] = 'Bearer ' + token;
-    
-    var opts = { method: method, headers: headers };
-    if(body) opts.body = JSON.stringify(body);
-    
+
     if(method === 'GET'){
-      url += '?select=*&user_id=eq.' + _user.id;
-    } else if(method === 'POST'){
+      headers['Prefer'] = 'return=representation';
+      url += '?select=*&user_id=eq.' + encodeURIComponent(_user.id);
+    } else {
+      // POST con upsert = INSERT OR UPDATE
       headers['Prefer'] = 'resolution=merge-duplicates,return=minimal';
-    } else if(method === 'PATCH'){
-      url += '?user_id=eq.' + _user.id;
     }
-    
+
+    var opts = { method: method || 'GET', headers: headers };
+    if(body) opts.body = JSON.stringify(body);
     return fetch(url, opts);
   });
 }
 
-function getSupaAuth(callback){
-  _supa.auth.getSession().then(function(res){
-    if(!res.data || !res.data.session){
-      setSyncDot('error');
-      mostrarToast('Sin sesion activa. Vuelve a iniciar sesion.', '#f87171');
+// ── Cargar desde la nube → aplicar a la app ──────
+function cargarDesdeSupa(){
+  if(_modoLocal || !_supa || !_user) return;
+  setSyncDot('syncing');
+  syncFetch('GET').then(function(res){
+    if(!res.ok){ throw new Error('HTTP ' + res.status); }
+    return res.json();
+  }).then(function(rows){
+    setSyncDot('ok');
+    if(!Array.isArray(rows) || rows.length === 0){
+      // Primera vez en este dispositivo — subir lo que haya local
+      console.log('[SYNC] Sin datos en nube, subiendo local...');
+      subirDatosLocales();
       return;
     }
-    callback(_supa);
+    var d = rows[0];
+    console.log('[SYNC] Datos recibidos de la nube OK');
+    // Aplicar TODOS los datos de la nube sin condiciones — la nube manda
+    if(d.empresa && typeof d.empresa === 'object'){
+      Object.assign(empresa, d.empresa);
+      aplicarEmpresaAlForm();
+      actualizarTopbar();
+    }
+    if(d.ajustes && typeof d.ajustes === 'object'){
+      aplicarAjustes(d.ajustes);
+    }
+    if(Array.isArray(d.historial)) historial = d.historial;
+    if(Array.isArray(d.clientes))  clientes  = d.clientes;
+    if(d.nump && Number(d.nump) > 0) numP = Number(d.nump);
+    // Logo solo en localStorage (demasiado grande para DB)
+    var logoLocal = localStorage.getItem('dxf_empresa_logo');
+    if(logoLocal) empresa.logo = logoLocal;
+    actualizarTopbar();
+    renderHist();
+    renderClientes();
+    calc();
+  }).catch(function(e){
+    setSyncDot('error');
+    console.error('[SYNC] Error carga:', e);
   });
 }
 
+// ── Subir datos locales → nube ────────────────────
 function subirDatosLocales(){
   if(_modoLocal || !_supa || !_user) return;
   setSyncDot('syncing');
   var payload = construirPayload();
-  console.log('[SYNC] Subiendo con fetch directo para user:', _user.id);
-
-  // Usar upsert via POST con Prefer: resolution=merge-duplicates
   syncFetch('POST', payload).then(function(res){
     if(res.ok){
-      _lastSyncTs = Date.now(); // marcar que acabamos de subir nosotros
+      _lastSyncTs = Date.now();
       setSyncDot('ok');
-      console.log('[SYNC] Guardado OK:', res.status);
+      console.log('[SYNC] Subida OK');
     } else {
       res.text().then(function(txt){
         setSyncDot('error');
-        console.error('[SYNC] Error:', res.status, txt);
-        mostrarToast('Sync error ' + res.status + ': ' + txt.substring(0,80), '#f87171');
+        console.error('[SYNC] Error subida:', res.status, txt);
+        mostrarToast('Error al guardar: ' + res.status, '#f87171');
       });
     }
   }).catch(function(e){
     setSyncDot('error');
-    console.error('[SYNC] Fetch catch:', e);
-    mostrarToast('Error de red al sincronizar', '#f87171');
+    console.error('[SYNC] Error red:', e);
   });
 }
 
@@ -1141,9 +1137,8 @@ function scheduleSyncSupa(){
 
 function sincronizarAhora(){
   cerrarUserMenu();
-  console.log('[SYNC MANUAL] Iniciando...');
+  console.log('[SYNC MANUAL] Recargando desde nube...');
   cargarDesdeSupa();
-  setTimeout(subirDatosLocales, 2000);
 }
 
 // Aplicar ajustes al formulario
