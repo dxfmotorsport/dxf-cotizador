@@ -1051,6 +1051,10 @@ function cargarDesdeSupa(){
       Object.assign(empresa, d.empresa);
       aplicarEmpresaAlForm();
       actualizarTopbar();
+      // Si hay logo_url en la nube y no tenemos logo local, descargarlo
+      if(d.empresa.logo_url && !empresa.logo){
+        cargarLogoDesdeUrl(d.empresa.logo_url);
+      }
     }
     if(d.ajustes && typeof d.ajustes === 'object'){
       aplicarAjustes(d.ajustes);
@@ -1111,7 +1115,8 @@ function mostrarToast(msg, color){
 
 function construirPayload(){
   var empSinLogo = Object.assign({}, empresa);
-  delete empSinLogo.logo;
+  delete empSinLogo.logo; // base64 no va a DB, demasiado grande
+  // logo_url (URL de Storage) sí se sincroniza
   // Leer ajustes del DOM con fallback a localStorage para evitar subir ceros
   function safeN(id, lsKey){
     var el=document.getElementById(id);
@@ -1247,14 +1252,65 @@ function cargarLogo(input){
   var reader=new FileReader();
   reader.onload=function(e){
     empresa.logo=e.target.result;
-    try{localStorage.setItem('dxf_empresa_logo',empresa.logo);}catch(e2){
-      alert('El logo es demasiado grande para guardarse localmente. Usa una imagen mas pequeña.');
-      empresa.logo=''; return;
-    }
+    try{localStorage.setItem('dxf_empresa_logo',empresa.logo);}catch(e2){}
     mostrarLogoPreview(empresa.logo);
     actualizarTopbar();
+    // Subir logo a Supabase Storage para sincronizar entre dispositivos
+    subirLogoSupa(file);
   };
   reader.readAsDataURL(file);
+}
+
+function subirLogoSupa(file){
+  if(!_supa||!_user) return;
+  _supa.auth.getSession().then(function(res){
+    var token=res.data&&res.data.session?res.data.session.access_token:null;
+    if(!token) return;
+    var path='logos/'+_user.id+'/logo';
+    var ext=file.name.split('.').pop().toLowerCase()||'png';
+    // Subir al bucket "logos" vía REST
+    fetch(SUPA_URL+'/storage/v1/object/logos/'+_user.id+'/logo.'+ext,{
+      method:'POST',
+      headers:{
+        'apikey':SUPA_KEY,
+        'Authorization':'Bearer '+token,
+        'Content-Type':file.type,
+        'x-upsert':'true'
+      },
+      body:file
+    }).then(function(r){
+      if(r.ok){
+        // Guardar la URL pública en empresa para que otros dispositivos la lean
+        var logoUrl=SUPA_URL+'/storage/v1/object/public/logos/'+_user.id+'/logo.'+ext;
+        empresa.logo_url=logoUrl;
+        console.log('[LOGO] Subido a Storage OK:', logoUrl);
+        // Guardar en DB y sincronizar
+        scheduleSyncSupa();
+      } else {
+        r.text().then(function(t){ console.warn('[LOGO] Error subida Storage:', r.status, t); });
+      }
+    }).catch(function(e){ console.warn('[LOGO] Error red Storage:', e); });
+  });
+}
+
+function cargarLogoDesdeUrl(url){
+  // Añadir timestamp para evitar caché
+  var urlFresh = url + '?t=' + Date.now();
+  fetch(urlFresh).then(function(r){
+    if(!r.ok) return;
+    return r.blob();
+  }).then(function(blob){
+    if(!blob) return;
+    var reader = new FileReader();
+    reader.onload = function(e){
+      empresa.logo = e.target.result;
+      try{ localStorage.setItem('dxf_empresa_logo', empresa.logo); }catch(ex){}
+      mostrarLogoPreview(empresa.logo);
+      actualizarTopbar();
+      console.log('[LOGO] Descargado desde Storage OK');
+    };
+    reader.readAsDataURL(blob);
+  }).catch(function(e){ console.warn('[LOGO] Error descarga:', e); });
 }
 
 function mostrarLogoPreview(src){
@@ -1267,6 +1323,7 @@ function mostrarLogoPreview(src){
 function borrarLogo(){
   if(!confirm('Eliminar el logo?')) return;
   empresa.logo='';
+  empresa.logo_url='';
   try{localStorage.removeItem('dxf_empresa_logo');}catch(e){}
   var prev=document.getElementById('emp_logo_preview');
   var del=document.getElementById('emp_logo_del');
@@ -1274,6 +1331,7 @@ function borrarLogo(){
   if(del) del.style.display='none';
   var img=document.getElementById('toplogo');
   if(img) img.src=LOGO;
+  scheduleSyncSupa(); // sincronizar la eliminación
 }
 
 function switchTab(id){
