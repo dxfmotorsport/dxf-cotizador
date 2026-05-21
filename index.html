@@ -623,7 +623,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-siz
 // SUPABASE — Auth + Sync
 // ══════════════════════════════════════════════════
 var SUPA_URL = 'https://rajzjjovoeksrwpducwz.supabase.co';
-var SUPA_KEY = 'sb_publishable_AfMsj5DEGgOMlu73t6Lbdg_IwyFWtJ_';
+var SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJhanpqam92b2Vrc3J3cGR1Y3d6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkzNDM2MzQsImV4cCI6MjA5NDkxOTYzNH0.XxrMmZBZWL4e4Vdl-c-ZA1NMD7D6GAXVCuQbn2zQGQ0';
 var _supa = null;
 var _user = null;
 var _syncTimeout = null;
@@ -1035,7 +1035,9 @@ function subirDatosLocales(){
         console.log('[SYNC] Primera vez → INSERT');
         return _supa.from('datos_usuario').insert(payload);
       } else if(check.error){
-        console.error('[SYNC] Error al verificar fila:', check.error);
+        var ce = check.error.message || check.error.code || JSON.stringify(check.error);
+        console.error('[SYNC] Error al verificar fila:', ce);
+        mostrarToast('Check error: ' + ce, '#f87171');
         throw check.error;
       } else {
         // Ya existe → UPDATE
@@ -1049,9 +1051,9 @@ function subirDatosLocales(){
       if(!res) return;
       if(res.error){
         setSyncDot('error');
+        var errMsg = res.error.message || res.error.code || res.error.hint || JSON.stringify(res.error);
         console.error('[SYNC] Error al guardar:', JSON.stringify(res.error));
-        // Mostrar error visible al usuario
-        mostrarToast('Error sync: ' + (res.error.message || res.error.code), '#f87171');
+        mostrarToast('Sync: ' + errMsg, '#f87171');
       } else {
         setSyncDot('ok');
         console.log('[SYNC] Guardado OK');
@@ -1059,8 +1061,9 @@ function subirDatosLocales(){
     })
     .catch(function(e){
       setSyncDot('error');
-      console.error('[SYNC] Catch:', e);
-      mostrarToast('Error de conexion al sincronizar', '#f87171');
+      var msg = e && e.message ? e.message : JSON.stringify(e);
+      console.error('[SYNC] Catch:', msg);
+      mostrarToast('Sync error: ' + msg, '#f87171');
     });
 }
 
