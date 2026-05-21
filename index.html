@@ -1070,17 +1070,22 @@ function cargarDesdeSupa(){
 }
 
 // ── Subir datos locales → nube ────────────────────
+var _subiendo = false;
 function subirDatosLocales(){
   if(_modoLocal || !_supa || !_user) return;
+  if(_subiendo) return; // evitar llamadas simultáneas
+  _subiendo = true;
   setSyncDot('syncing');
   var payload = construirPayload();
   syncFetch('POST', payload).then(function(res){
     if(res.ok){
+      _subiendo = false;
       _lastSyncTs = Date.now();
       setSyncDot('ok');
       console.log('[SYNC] Subida OK');
     } else {
       res.text().then(function(txt){
+        _subiendo = false;
         setSyncDot('error');
         console.error('[SYNC] Error subida:', res.status, txt);
         mostrarToast('Error al guardar: ' + res.status, '#f87171');
@@ -1088,6 +1093,7 @@ function subirDatosLocales(){
     }
   }).catch(function(e){
     setSyncDot('error');
+    _subiendo = false;
     console.error('[SYNC] Error red:', e);
   });
 }
@@ -1132,7 +1138,7 @@ function construirPayload(){
 function scheduleSyncSupa(){
   if(_modoLocal || !_supa || !_user) return;
   clearTimeout(_syncTimeout);
-  _syncTimeout = setTimeout(subirDatosLocales, 800);
+  _syncTimeout = setTimeout(subirDatosLocales, 1200);
 }
 
 function sincronizarAhora(){
@@ -1471,7 +1477,7 @@ function guardarYGenerar(){
     localStorage.setItem('dxf_historial', JSON.stringify(historial.slice(0,50)));
     localStorage.setItem('dxf_nump', numP);
   } catch(e){}
-  scheduleSyncSupa();
+  subirDatosLocales(); // sync inmediato al guardar presupuesto
 
   window._pres={
     num:num, fecha:fecha, cli:cli, cll:cll,
@@ -1604,6 +1610,7 @@ function limpiarHist(){
     localStorage.removeItem('dxf_nump');
   } catch(e) {}
   renderHist();
+  subirDatosLocales(); // sync inmediato al borrar historial
 }
 
 // SISTEMA DE LINEAS MULTIPLES
@@ -1857,7 +1864,7 @@ function guardarCliente(){
   };
   clientes.unshift(cli);
   guardarClientesLS();
-  scheduleSyncSupa();
+  subirDatosLocales();
   limpiarFormCliente();
   mostrarMsg('nc_msg','Cliente guardado correctamente','#EAF3DE','#27500A');
   setTimeout(function(){var el=document.getElementById('nc_msg');if(el)el.style.display='none';},2500);
@@ -2055,7 +2062,7 @@ function actualizarCliente(){
     fecha: clientes[clienteEditandoIdx].fecha
   };
   guardarClientesLS();
-  scheduleSyncSupa();
+  subirDatosLocales();
   cerrarModal();
   renderClientes();
 }
@@ -2065,7 +2072,7 @@ function eliminarCliente(){
   if(!confirm('Eliminar este cliente?')) return;
   clientes.splice(clienteEditandoIdx, 1);
   guardarClientesLS();
-  scheduleSyncSupa();
+  subirDatosLocales();
   cerrarModal();
   renderClientes();
 }
