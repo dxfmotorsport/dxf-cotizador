@@ -1046,15 +1046,22 @@ function cargarDesdeSupa(){
     }
     var d = rows[0];
     console.log('[SYNC] Datos recibidos de la nube OK');
-    // Aplicar TODOS los datos de la nube sin condiciones — la nube manda
+    // Aplicar TODOS los datos de la nube sin condiciones
     if(d.empresa && typeof d.empresa === 'object'){
+      var logoUrlNube = d.empresa.logo_url || '';
+      var logoUrlLocal = empresa.logo_url || '';
       Object.assign(empresa, d.empresa);
       aplicarEmpresaAlForm();
-      actualizarTopbar();
-      // Si hay logo_url en la nube y no tenemos logo local, descargarlo
-      if(d.empresa.logo_url && !empresa.logo){
-        cargarLogoDesdeUrl(d.empresa.logo_url);
+      // Logo: si la nube tiene URL diferente, descargar siempre
+      if(logoUrlNube && logoUrlNube !== logoUrlLocal){
+        console.log('[LOGO] Logo nuevo en nube, descargando...');
+        cargarLogoDesdeUrl(logoUrlNube);
+      } else if(!logoUrlNube){
+        // Sin logo en nube: usar localStorage local
+        var logoLocal = localStorage.getItem('dxf_empresa_logo');
+        if(logoLocal) empresa.logo = logoLocal;
       }
+      actualizarTopbar();
     }
     if(d.ajustes && typeof d.ajustes === 'object'){
       aplicarAjustes(d.ajustes);
@@ -1062,10 +1069,7 @@ function cargarDesdeSupa(){
     if(Array.isArray(d.historial)) historial = d.historial;
     if(Array.isArray(d.clientes))  clientes  = d.clientes;
     if(d.nump && Number(d.nump) > 0) numP = Number(d.nump);
-    // Logo solo en localStorage (demasiado grande para DB)
-    var logoLocal = localStorage.getItem('dxf_empresa_logo');
-    if(logoLocal) empresa.logo = logoLocal;
-    actualizarTopbar();
+    setSyncDot('ok');
     renderHist();
     renderClientes();
     calc();
@@ -1220,6 +1224,7 @@ function cargarEmpresaLS(){
   try{
     var s=localStorage.getItem('dxf_empresa');
     if(s){var d=JSON.parse(s);Object.assign(empresa,d);}
+    // logo_url viene dentro de dxf_empresa, ya se aplica con Object.assign
     var logo=localStorage.getItem('dxf_empresa_logo');
     if(logo) empresa.logo=logo;
   }catch(e){}
@@ -1283,9 +1288,14 @@ function subirLogoSupa(file){
         // Guardar la URL pública en empresa para que otros dispositivos la lean
         var logoUrl=SUPA_URL+'/storage/v1/object/public/logos/'+_user.id+'/logo.'+ext;
         empresa.logo_url=logoUrl;
+        // Guardar también en localStorage de empresa para persistir
+        try{
+          var empGuardado=JSON.parse(localStorage.getItem('dxf_empresa')||'{}');
+          empGuardado.logo_url=logoUrl;
+          localStorage.setItem('dxf_empresa',JSON.stringify(empGuardado));
+        }catch(ex){}
         console.log('[LOGO] Subido a Storage OK:', logoUrl);
-        // Guardar en DB y sincronizar
-        scheduleSyncSupa();
+        subirDatosLocales(); // sync inmediato con la nueva logo_url
       } else {
         r.text().then(function(t){ console.warn('[LOGO] Error subida Storage:', r.status, t); });
       }
