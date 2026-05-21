@@ -817,7 +817,7 @@ function initRealtime(){
         // Pequeño delay para que Supabase haya procesado el cambio
         setTimeout(function(){
           cargarDesdeSupa();
-          mostrarToastOk('✓ Sincronizado desde otro dispositivo');
+          mostrarToastOk('↓ Sincronizado');
         }, 300);
       })
       .subscribe(function(status, err){
@@ -838,11 +838,13 @@ function initRealtime(){
 }
 
 function mostrarToastOk(msg){
+  // Toast discreto — pequeño, arriba a la derecha, desaparece solo
   var t=document.createElement('div');
   t.textContent=msg;
-  t.style.cssText='position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#27500A;color:#fff;padding:10px 18px;border-radius:8px;font-size:12px;font-weight:600;z-index:99999;box-shadow:0 2px 8px rgba(0,0,0,.3);max-width:90vw;text-align:center';
+  t.style.cssText='position:fixed;top:60px;right:12px;background:rgba(39,80,10,0.9);color:#fff;padding:6px 12px;border-radius:6px;font-size:11px;font-weight:500;z-index:99999;pointer-events:none;opacity:1;transition:opacity .4s';
   document.body.appendChild(t);
-  setTimeout(function(){if(t.parentNode)t.parentNode.removeChild(t);},2500);
+  setTimeout(function(){t.style.opacity='0';},1800);
+  setTimeout(function(){if(t.parentNode)t.parentNode.removeChild(t);},2200);
 }
 
 function onLoginOk(user){
@@ -1088,7 +1090,7 @@ function subirDatosLocales(){
         _subiendo = false;
         setSyncDot('error');
         console.error('[SYNC] Error subida:', res.status, txt);
-        mostrarToast('Error al guardar: ' + res.status, '#f87171');
+        // Error silencioso — el sync dot rojo ya indica el problema
       });
     }
   }).catch(function(e){
