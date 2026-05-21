@@ -1057,9 +1057,16 @@ function cargarDesdeSupa(){
         console.log('[LOGO] Logo nuevo en nube, descargando...');
         cargarLogoDesdeUrl(logoUrlNube);
       } else if(!logoUrlNube){
-        // Sin logo en nube: usar localStorage local
-        var logoLocal = localStorage.getItem('dxf_empresa_logo');
-        if(logoLocal) empresa.logo = logoLocal;
+        // Sin logo en nube: significa que fue borrado desde otro dispositivo
+        // Limpiar logo local también
+        empresa.logo = '';
+        try{ localStorage.removeItem('dxf_empresa_logo'); }catch(ex){}
+        var prev=document.getElementById('emp_logo_preview');
+        var del=document.getElementById('emp_logo_del');
+        if(prev) prev.innerHTML='<span style="font-size:11px;color:#bbb;text-align:center;line-height:1.4">Sin<br>logo</span>';
+        if(del) del.style.display='none';
+        var imgTop=document.getElementById('toplogo');
+        if(imgTop) imgTop.src=LOGO;
       }
       actualizarTopbar();
     }
@@ -1333,15 +1340,22 @@ function mostrarLogoPreview(src){
 function borrarLogo(){
   if(!confirm('Eliminar el logo?')) return;
   empresa.logo='';
+  empresa.logo='';
   empresa.logo_url='';
   try{localStorage.removeItem('dxf_empresa_logo');}catch(e){}
+  // Actualizar también dxf_empresa en localStorage para que logo_url quede vacío
+  try{
+    var eg=JSON.parse(localStorage.getItem('dxf_empresa')||'{}');
+    eg.logo_url=''; eg.logo='';
+    localStorage.setItem('dxf_empresa',JSON.stringify(eg));
+  }catch(e){}
   var prev=document.getElementById('emp_logo_preview');
   var del=document.getElementById('emp_logo_del');
   if(prev) prev.innerHTML='<span style="font-size:11px;color:#bbb;text-align:center;line-height:1.4">Sin<br>logo</span>';
   if(del) del.style.display='none';
   var img=document.getElementById('toplogo');
   if(img) img.src=LOGO;
-  scheduleSyncSupa(); // sincronizar la eliminación
+  subirDatosLocales(); // sync inmediato de la eliminación
 }
 
 function switchTab(id){
