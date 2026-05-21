@@ -627,6 +627,8 @@ var SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJ
 var _supa = null;
 var _user = null;
 var _syncTimeout = null;
+var _realtimeChannel = null;
+var _lastSyncTs = 0; // timestamp del último sync para evitar bucles
 var _loginStep = 'email'; // 'email' | 'password'
 
 var _modoLocal = false;
@@ -783,6 +785,44 @@ function ocultarLogin(){
   if(ub) ub.style.display = 'flex';
 }
 
+function initRealtime(){
+  if(_modoLocal || !_supa || !_user) return;
+  // Desconectar canal anterior si existe
+  if(_realtimeChannel){
+    _supa.removeChannel(_realtimeChannel);
+    _realtimeChannel = null;
+  }
+  // Suscribirse a cambios en la fila del usuario
+  _realtimeChannel = _supa
+    .channel('datos_usuario_' + _user.id)
+    .on('postgres_changes', {
+      event: 'UPDATE',
+      schema: 'public',
+      table: 'datos_usuario',
+      filter: 'user_id=eq.' + _user.id
+    }, function(payload){
+      // Otro dispositivo actualizó los datos — recargar
+      var ahora = Date.now();
+      if(ahora - _lastSyncTs < 3000) return; // ignorar si acabamos de subir nosotros
+      console.log('[REALTIME] Cambio detectado desde otro dispositivo, recargando...');
+      setSyncDot('syncing');
+      cargarDesdeSupa();
+      mostrarToastOk('✓ Datos actualizados desde otro dispositivo');
+    })
+    .subscribe(function(status){
+      console.log('[REALTIME] Estado:', status);
+    });
+  console.log('[REALTIME] Suscrito a cambios en tiempo real');
+}
+
+function mostrarToastOk(msg){
+  var t=document.createElement('div');
+  t.textContent=msg;
+  t.style.cssText='position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#27500A;color:#fff;padding:10px 18px;border-radius:8px;font-size:12px;font-weight:600;z-index:99999;box-shadow:0 2px 8px rgba(0,0,0,.3);max-width:90vw;text-align:center';
+  document.body.appendChild(t);
+  setTimeout(function(){if(t.parentNode)t.parentNode.removeChild(t);},2500);
+}
+
 function onLoginOk(user){
   console.log('[AUTH] Login OK:', user.email, 'id:', user.id);
   ocultarLogin();
@@ -802,8 +842,9 @@ function onLoginOk(user){
   var ums=document.getElementById('um-sync-btn'); if(ums) ums.style.display='block';
   var uml=document.getElementById('um-logout-btn'); if(uml) uml.style.display='block';
   var lb=document.getElementById('local-badge'); if(lb) lb.style.display='none';
-  // Cargar datos de la nube (sobreescribe localStorage)
+  // Cargar datos de la nube y activar sync en tiempo real
   cargarDesdeSupa();
+  initRealtime();
 }
 
 // ── Auth: Google ─────────────────────────────────
@@ -878,6 +919,7 @@ function loginConEmail(){
 function cerrarSesion(){
   cerrarUserMenu();
   if(!_supa) return;
+  if(_realtimeChannel){ _supa.removeChannel(_realtimeChannel); _realtimeChannel = null; }
   _supa.auth.signOut().then(function(){
     _user = null;
     mostrarLogin();
@@ -1021,6 +1063,7 @@ function subirDatosLocales(){
   // Usar upsert via POST con Prefer: resolution=merge-duplicates
   syncFetch('POST', payload).then(function(res){
     if(res.ok){
+      _lastSyncTs = Date.now(); // marcar que acabamos de subir nosotros
       setSyncDot('ok');
       console.log('[SYNC] Guardado OK:', res.status);
     } else {
@@ -1077,7 +1120,7 @@ function construirPayload(){
 function scheduleSyncSupa(){
   if(_modoLocal || !_supa || !_user) return;
   clearTimeout(_syncTimeout);
-  _syncTimeout = setTimeout(subirDatosLocales, 1500);
+  _syncTimeout = setTimeout(subirDatosLocales, 800);
 }
 
 function sincronizarAhora(){
