@@ -792,27 +792,43 @@ function initRealtime(){
     _supa.removeChannel(_realtimeChannel);
     _realtimeChannel = null;
   }
-  // Suscribirse a cambios en la fila del usuario
-  _realtimeChannel = _supa
-    .channel('datos_usuario_' + _user.id)
-    .on('postgres_changes', {
-      event: 'UPDATE',
-      schema: 'public',
-      table: 'datos_usuario',
-      filter: 'user_id=eq.' + _user.id
-    }, function(payload){
-      // Otro dispositivo actualizó los datos — recargar
-      var ahora = Date.now();
-      if(ahora - _lastSyncTs < 3000) return; // ignorar si acabamos de subir nosotros
-      console.log('[REALTIME] Cambio detectado desde otro dispositivo, recargando...');
-      setSyncDot('syncing');
-      cargarDesdeSupa();
-      mostrarToastOk('✓ Datos actualizados desde otro dispositivo');
-    })
-    .subscribe(function(status){
-      console.log('[REALTIME] Estado:', status);
-    });
-  console.log('[REALTIME] Suscrito a cambios en tiempo real');
+  // Obtener token para autenticar el canal Realtime
+  _supa.auth.getSession().then(function(res){
+    var token = res.data && res.data.session ? res.data.session.access_token : null;
+    if(!token){ console.warn('[REALTIME] Sin token, reintentando en 3s...'); setTimeout(initRealtime, 3000); return; }
+
+    _realtimeChannel = _supa
+      .channel('datos_usuario_' + _user.id, {
+        config: { broadcast: { self: false } }
+      })
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'datos_usuario',
+        filter: 'user_id=eq.' + _user.id
+      }, function(payload){
+        var ahora = Date.now();
+        if(ahora - _lastSyncTs < 3000) return;
+        console.log('[REALTIME] Cambio detectado, recargando...');
+        setSyncDot('syncing');
+        cargarDesdeSupa();
+        mostrarToastOk('✓ Datos actualizados desde otro dispositivo');
+      })
+      .subscribe(function(status, err){
+        console.log('[REALTIME] Estado:', status, err||'');
+        if(status === 'SUBSCRIBED'){
+          console.log('[REALTIME] ✓ Escuchando cambios en tiempo real');
+        }
+        if(status === 'CHANNEL_ERROR' || status === 'TIMED_OUT'){
+          console.warn('[REALTIME] Error, reintentando en 5s...');
+          setTimeout(initRealtime, 5000);
+        }
+      });
+
+    // Autenticar el canal con el token
+    _supa.realtime.setAuth(token);
+    console.log('[REALTIME] Canal creado con token');
+  });
 }
 
 function mostrarToastOk(msg){
