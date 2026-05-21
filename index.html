@@ -672,42 +672,9 @@ function initSupabase(){
 
 // ── Aprobación de usuario ────────────────────────
 function comprobarAprobacion(user){
-  var email = user.email || '';
-
-  // El admin siempre tiene acceso
-  if(email === ADMIN_EMAIL){
-    onLoginOk(user);
-    return;
-  }
-
-  // Comprobar si está aprobado en la tabla
-  _supa.from('usuarios_aprobados')
-    .select('aprobado, bloqueado')
-    .eq('user_id', user.id)
-    .single()
-    .then(function(res){
-      if(res.error && res.error.code === 'PGRST116'){
-        // No existe → crear solicitud pendiente
-        crearSolicitud(user);
-        return;
-      }
-      if(res.error){ onLoginOk(user); return; } // Si falla la tabla, dejar pasar
-      var d = res.data;
-      if(d.bloqueado){
-        mostrarLoginError('Tu acceso ha sido denegado. Contacta con el administrador.');
-        _supa.auth.signOut();
-        return;
-      }
-      if(d.aprobado){
-        onLoginOk(user);
-      } else {
-        mostrarPendiente(user);
-      }
-    })
-    .catch(function(){
-      // Si la tabla no existe todavía, dejar pasar (admin aún no configuró)
-      onLoginOk(user);
-    });
+  // Por ahora acceso directo para todos los usuarios autenticados
+  // El sistema de aprobación se activa cuando la infraestructura esté lista
+  onLoginOk(user);
 }
 
 function crearSolicitud(user){
@@ -972,73 +939,75 @@ function cargarDesdeSupa(){
   if(_modoLocal || !_supa || !_user) return;
   setSyncDot('syncing');
   console.log('[SYNC] Cargando datos para user:', _user.id);
-  // Refrescar sesión antes de hacer queries
-  _supa.auth.getSession().then(function(sess){
-    if(sess.data && sess.data.session){
-      console.log('[SYNC] Token OK, haciendo query...');
-    } else {
-      console.warn('[SYNC] Sin sesión activa');
-      setSyncDot('error');
+  syncFetch('GET').then(function(res){
+    return res.json();
+  }).then(function(rows){
+    if(!Array.isArray(rows) || rows.length === 0){
+      setSyncDot('ok');
+      if(historial.length > 0 || clientes.length > 0) subirDatosLocales();
       return;
     }
+    var d = rows[0];
+    console.log('[SYNC] Datos cargados OK');
+    if(d.empresa){ Object.assign(empresa, d.empresa); aplicarEmpresaAlForm(); actualizarTopbar(); }
+    if(d.ajustes){ aplicarAjustes(d.ajustes); }
+    if(d.historial && Array.isArray(d.historial) && d.historial.length >= historial.length){
+      historial = d.historial;
+    }
+    if(d.clientes && Array.isArray(d.clientes) && d.clientes.length >= clientes.length){
+      clientes = d.clientes;
+    }
+    if(d.nump && d.nump > numP){ numP = d.nump; }
+    var logoLocal = localStorage.getItem('dxf_empresa_logo');
+    if(logoLocal){ empresa.logo = logoLocal; actualizarTopbar(); }
+    renderHist();
+    renderClientes();
+    calc();
+    setSyncDot('ok');
+    if(d.historial && historial.length > d.historial.length){
+      setTimeout(subirDatosLocales, 500);
+    }
+  }).catch(function(e){
+    setSyncDot('error');
+    console.error('[SYNC] Carga error:', e);
+    mostrarToast('Error al cargar datos', '#f87171');
   });
-  getSupaAuth(function(client){
-  client.from('datos_usuario')
-    .select('*')
-    .eq('user_id', _user.id)
-    .single()
-    .then(function(res){
-      if(res.error && res.error.code === 'PGRST116'){
-        // No existe fila para este usuario — primera vez en este dispositivo
-        // Solo subir datos locales si hay algo relevante (historial o clientes)
-        setSyncDot('ok');
-        if(historial.length > 0 || clientes.length > 0){
-          subirDatosLocales();
-        }
-        // Si no hay datos locales, no sobreescribir nada
-        return;
-      }
-      if(res.error){ setSyncDot('error'); console.error('Supa load:', res.error); return; }
-      var d = res.data;
-      // La nube siempre gana — es la fuente de verdad entre dispositivos
-      if(d.empresa){ Object.assign(empresa, d.empresa); aplicarEmpresaAlForm(); actualizarTopbar(); }
-      if(d.ajustes){ aplicarAjustes(d.ajustes); }
-      if(d.historial && Array.isArray(d.historial) && d.historial.length >= historial.length){
-        historial = d.historial;
-      }
-      if(d.clientes && Array.isArray(d.clientes) && d.clientes.length >= clientes.length){
-        clientes = d.clientes;
-      }
-      if(d.nump && d.nump > numP){ numP = d.nump; }
-      // Logo: localStorage (no se guarda en DB por tamaño)
-      var logoLocal = localStorage.getItem('dxf_empresa_logo');
-      if(logoLocal){ empresa.logo = logoLocal; actualizarTopbar(); }
-      renderHist();
-      renderClientes();
-      calc();
-      setSyncDot('ok');
-      // Si los datos locales tienen más entradas, sincronizar también hacia arriba
-      // (puede pasar si se usó en local y luego se conectó)
-      if(d.historial && historial.length > d.historial.length){
-        setTimeout(subirDatosLocales, 500);
-      }
-    })
-    .catch(function(e){
-      setSyncDot('error');
-      console.error('Supa load catch:', e);
-    });
+}
+
+function syncFetch(method, body){
+  // Fetch directo a Supabase REST API con token explícito
+  return _supa.auth.getSession().then(function(res){
+    var token = res.data && res.data.session ? res.data.session.access_token : null;
+    var url = SUPA_URL + '/rest/v1/datos_usuario';
+    var headers = {
+      'apikey': SUPA_KEY,
+      'Content-Type': 'application/json',
+      'Prefer': 'return=minimal'
+    };
+    if(token) headers['Authorization'] = 'Bearer ' + token;
+    
+    var opts = { method: method, headers: headers };
+    if(body) opts.body = JSON.stringify(body);
+    
+    if(method === 'GET'){
+      url += '?select=*&user_id=eq.' + _user.id;
+    } else if(method === 'POST'){
+      headers['Prefer'] = 'resolution=merge-duplicates,return=minimal';
+    } else if(method === 'PATCH'){
+      url += '?user_id=eq.' + _user.id;
+    }
+    
+    return fetch(url, opts);
+  });
 }
 
 function getSupaAuth(callback){
-  // Usar el cliente principal _supa — ya tiene la sesión activa
   _supa.auth.getSession().then(function(res){
     if(!res.data || !res.data.session){
       setSyncDot('error');
-      console.error('[SYNC] Sin sesión activa');
       mostrarToast('Sin sesion activa. Vuelve a iniciar sesion.', '#f87171');
       return;
     }
-    console.log('[SYNC] Sesión OK, token:', res.data.session.access_token.substring(0,20)+'...');
     callback(_supa);
   });
 }
@@ -1047,51 +1016,25 @@ function subirDatosLocales(){
   if(_modoLocal || !_supa || !_user) return;
   setSyncDot('syncing');
   var payload = construirPayload();
-  console.log('[SYNC] Subiendo datos para user:', _user.id);
+  console.log('[SYNC] Subiendo con fetch directo para user:', _user.id);
 
-  getSupaAuth(function(client){
-  // Primero comprobar si existe la fila
-  client.from('datos_usuario')
-    .select('user_id')
-    .eq('user_id', _user.id)
-    .single()
-    .then(function(check){
-      if(check.error && check.error.code === 'PGRST116'){
-        // No existe → INSERT
-        console.log('[SYNC] Primera vez → INSERT');
-        return client.from('datos_usuario').insert(payload);
-      } else if(check.error){
-        var ce = check.error.message || check.error.code || JSON.stringify(check.error);
-        console.error('[SYNC] Error al verificar fila:', JSON.stringify(check.error));
-        mostrarToast('RLS error: ' + ce + ' | uid:' + (_user?_user.id.substring(0,8):'null'), '#f87171');
-        throw check.error;
-      } else {
-        // Ya existe → UPDATE
-        console.log('[SYNC] Ya existe → UPDATE');
-        return client.from('datos_usuario')
-          .update(payload)
-          .eq('user_id', _user.id);
-      }
-    })
-    .then(function(res){
-      if(!res) return;
-      if(res.error){
+  // Usar upsert via POST con Prefer: resolution=merge-duplicates
+  syncFetch('POST', payload).then(function(res){
+    if(res.ok){
+      setSyncDot('ok');
+      console.log('[SYNC] Guardado OK:', res.status);
+    } else {
+      res.text().then(function(txt){
         setSyncDot('error');
-        var errMsg = res.error.message || res.error.code || res.error.hint || JSON.stringify(res.error);
-        console.error('[SYNC] Error al guardar:', JSON.stringify(res.error));
-        mostrarToast('Sync: ' + errMsg, '#f87171');
-      } else {
-        setSyncDot('ok');
-        console.log('[SYNC] Guardado OK');
-      }
-    })
-    .catch(function(e){
-      setSyncDot('error');
-      var msg = e && e.message ? e.message : JSON.stringify(e);
-      console.error('[SYNC] Catch:', msg);
-      mostrarToast('Sync error: ' + msg, '#f87171');
-    });
-  }); // getSupaAuth
+        console.error('[SYNC] Error:', res.status, txt);
+        mostrarToast('Sync error ' + res.status + ': ' + txt.substring(0,80), '#f87171');
+      });
+    }
+  }).catch(function(e){
+    setSyncDot('error');
+    console.error('[SYNC] Fetch catch:', e);
+    mostrarToast('Error de red al sincronizar', '#f87171');
+  });
 }
 
 // Toast helper para errores visibles
