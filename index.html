@@ -19,6 +19,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-siz
 .topbar img{width:32px;height:32px;object-fit:contain;border-radius:6px;flex-shrink:0}
 .topbar-title{color:#fff;font-size:15px;font-weight:600;letter-spacing:.02em}
 .topbar-sub{color:#888;font-size:11px;margin-left:auto}
+/* LAYOUT BASE (todos los tamaños) */
+.main-area{display:flex;flex:1;min-height:0;overflow:hidden;width:100%}
 /* NAV HORIZONTAL MOVIL */
 .nav{background:#1a1a1a;display:flex;flex-direction:row;flex-shrink:0;overflow-x:auto;-webkit-overflow-scrolling:touch}
 .nav::-webkit-scrollbar{display:none}
@@ -929,6 +931,13 @@ function toggleUserMenu(){
   if(!m) return;
   m.classList.toggle('open');
 }
+
+// Recargar datos cuando el usuario vuelve a la pestaña
+document.addEventListener('visibilitychange', function(){
+  if(document.visibilityState === 'visible' && !_modoLocal && _supa && _user){
+    cargarDesdeSupa();
+  }
+});
 function cerrarUserMenu(){
   var m = document.getElementById('user-menu');
   if(m) m.classList.remove('open');
@@ -967,26 +976,39 @@ function cargarDesdeSupa(){
     .single()
     .then(function(res){
       if(res.error && res.error.code === 'PGRST116'){
-        // No existe fila — primera vez, subir localStorage
+        // No existe fila para este usuario — primera vez en este dispositivo
+        // Solo subir datos locales si hay algo relevante (historial o clientes)
         setSyncDot('ok');
-        subirDatosLocales();
+        if(historial.length > 0 || clientes.length > 0){
+          subirDatosLocales();
+        }
+        // Si no hay datos locales, no sobreescribir nada
         return;
       }
       if(res.error){ setSyncDot('error'); console.error('Supa load:', res.error); return; }
       var d = res.data;
-      // Aplicar datos de la nube
+      // La nube siempre gana — es la fuente de verdad entre dispositivos
       if(d.empresa){ Object.assign(empresa, d.empresa); aplicarEmpresaAlForm(); actualizarTopbar(); }
       if(d.ajustes){ aplicarAjustes(d.ajustes); }
-      if(d.historial && Array.isArray(d.historial)){ historial = d.historial; }
-      if(d.clientes && Array.isArray(d.clientes)){ clientes = d.clientes; }
+      if(d.historial && Array.isArray(d.historial) && d.historial.length >= historial.length){
+        historial = d.historial;
+      }
+      if(d.clientes && Array.isArray(d.clientes) && d.clientes.length >= clientes.length){
+        clientes = d.clientes;
+      }
       if(d.nump && d.nump > numP){ numP = d.nump; }
-      // Cargar logo (guardado aparte por tamaño)
+      // Logo: localStorage (no se guarda en DB por tamaño)
       var logoLocal = localStorage.getItem('dxf_empresa_logo');
       if(logoLocal){ empresa.logo = logoLocal; actualizarTopbar(); }
       renderHist();
       renderClientes();
       calc();
       setSyncDot('ok');
+      // Si los datos locales tienen más entradas, sincronizar también hacia arriba
+      // (puede pasar si se usó en local y luego se conectó)
+      if(d.historial && historial.length > d.historial.length){
+        setTimeout(subirDatosLocales, 500);
+      }
     })
     .catch(function(e){
       setSyncDot('error');
@@ -998,25 +1020,42 @@ function subirDatosLocales(){
   if(_modoLocal || !_supa || !_user) return;
   setSyncDot('syncing');
   var payload = construirPayload();
+  // Intentar update primero, si no existe hacer insert
   _supa.from('datos_usuario')
-    .upsert(payload, {onConflict: 'user_id'})
+    .upsert(payload, {onConflict: 'user_id', ignoreDuplicates: false})
     .then(function(res){
-      if(res.error){ setSyncDot('error'); console.error('Supa upsert:', res.error); }
-      else setSyncDot('ok');
+      if(res.error){
+        setSyncDot('error');
+        console.error('Supa upsert error:', res.error);
+      } else {
+        setSyncDot('ok');
+      }
     })
-    .catch(function(){ setSyncDot('error'); });
+    .catch(function(e){
+      setSyncDot('error');
+      console.error('Supa upsert catch:', e);
+    });
 }
 
 function construirPayload(){
-  // No guardar logo en DB (demasiado grande), va en localStorage
   var empSinLogo = Object.assign({}, empresa);
   delete empSinLogo.logo;
+  // Leer ajustes del DOM con fallback a localStorage para evitar subir ceros
+  function safeN(id, lsKey){
+    var el=document.getElementById(id);
+    var v=el?parseFloat(el.value):NaN;
+    if(!isNaN(v)&&v>=0) return v;
+    var ls=parseFloat(localStorage.getItem(lsKey));
+    return !isNaN(ls)?ls:0;
+  }
   return {
     user_id: _user.id,
     empresa: empSinLogo,
     ajustes: {
-      mano: n('mano'), margen: n('margen'),
-      minimo: n('minimo'), minimo_mat: n('minimo_mat')
+      mano: safeN('mano','dxf_mano'),
+      margen: safeN('margen','dxf_margen'),
+      minimo: safeN('minimo','dxf_minimo'),
+      minimo_mat: safeN('minimo_mat','dxf_minimo_mat')
     },
     historial: historial.slice(0, 100),
     clientes: clientes,
