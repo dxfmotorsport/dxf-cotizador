@@ -817,6 +817,7 @@ function ocultarLogin(){
 }
 
 function onLoginOk(user){
+  console.log('[AUTH] Login OK:', user.email, 'id:', user.id);
   ocultarLogin();
   // Mostrar avatar
   var ph = document.getElementById('topbar-avatar-ph');
@@ -970,6 +971,7 @@ function setSyncDot(state){
 function cargarDesdeSupa(){
   if(_modoLocal || !_supa || !_user) return;
   setSyncDot('syncing');
+  console.log('[SYNC] Cargando datos para user:', _user.id);
   _supa.from('datos_usuario')
     .select('*')
     .eq('user_id', _user.id)
@@ -1020,21 +1022,55 @@ function subirDatosLocales(){
   if(_modoLocal || !_supa || !_user) return;
   setSyncDot('syncing');
   var payload = construirPayload();
-  // Intentar update primero, si no existe hacer insert
+  console.log('[SYNC] Subiendo datos para user:', _user.id);
+
+  // Primero comprobar si existe la fila
   _supa.from('datos_usuario')
-    .upsert(payload, {onConflict: 'user_id', ignoreDuplicates: false})
+    .select('user_id')
+    .eq('user_id', _user.id)
+    .single()
+    .then(function(check){
+      if(check.error && check.error.code === 'PGRST116'){
+        // No existe → INSERT
+        console.log('[SYNC] Primera vez → INSERT');
+        return _supa.from('datos_usuario').insert(payload);
+      } else if(check.error){
+        console.error('[SYNC] Error al verificar fila:', check.error);
+        throw check.error;
+      } else {
+        // Ya existe → UPDATE
+        console.log('[SYNC] Ya existe → UPDATE');
+        return _supa.from('datos_usuario')
+          .update(payload)
+          .eq('user_id', _user.id);
+      }
+    })
     .then(function(res){
+      if(!res) return;
       if(res.error){
         setSyncDot('error');
-        console.error('Supa upsert error:', res.error);
+        console.error('[SYNC] Error al guardar:', JSON.stringify(res.error));
+        // Mostrar error visible al usuario
+        mostrarToast('Error sync: ' + (res.error.message || res.error.code), '#f87171');
       } else {
         setSyncDot('ok');
+        console.log('[SYNC] Guardado OK');
       }
     })
     .catch(function(e){
       setSyncDot('error');
-      console.error('Supa upsert catch:', e);
+      console.error('[SYNC] Catch:', e);
+      mostrarToast('Error de conexion al sincronizar', '#f87171');
     });
+}
+
+// Toast helper para errores visibles
+function mostrarToast(msg, color){
+  var t=document.createElement('div');
+  t.textContent=msg;
+  t.style.cssText='position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:'+color+';color:#fff;padding:10px 18px;border-radius:8px;font-size:12px;font-weight:600;z-index:99999;box-shadow:0 2px 8px rgba(0,0,0,.3);max-width:90vw;text-align:center';
+  document.body.appendChild(t);
+  setTimeout(function(){if(t.parentNode)t.parentNode.removeChild(t);},4000);
 }
 
 function construirPayload(){
@@ -1067,23 +1103,15 @@ function construirPayload(){
 // Sync con debounce — se llama tras cualquier cambio
 function scheduleSyncSupa(){
   if(_modoLocal || !_supa || !_user) return;
-  setSyncDot('syncing');
   clearTimeout(_syncTimeout);
-  _syncTimeout = setTimeout(function(){
-    var payload = construirPayload();
-    _supa.from('datos_usuario')
-      .upsert(payload, {onConflict: 'user_id'})
-      .then(function(res){
-        if(res.error){ setSyncDot('error'); console.error('Supa sync:', res.error); }
-        else setSyncDot('ok');
-      })
-      .catch(function(){ setSyncDot('error'); });
-  }, 1500); // esperar 1.5s tras último cambio
+  _syncTimeout = setTimeout(subirDatosLocales, 1500);
 }
 
 function sincronizarAhora(){
   cerrarUserMenu();
-  subirDatosLocales();
+  console.log('[SYNC MANUAL] Iniciando...');
+  cargarDesdeSupa();
+  setTimeout(subirDatosLocales, 2000);
 }
 
 // Aplicar ajustes al formulario
