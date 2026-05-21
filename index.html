@@ -1136,9 +1136,10 @@ function construirPayload(){
 
 // Sync con debounce — se llama tras cualquier cambio
 function scheduleSyncSupa(){
+  // Alias: cualquier cambio pasa por aquí con debounce
   if(_modoLocal || !_supa || !_user) return;
   clearTimeout(_syncTimeout);
-  _syncTimeout = setTimeout(subirDatosLocales, 1200);
+  _syncTimeout = setTimeout(subirDatosLocales, 1500);
 }
 
 function sincronizarAhora(){
@@ -1274,6 +1275,8 @@ function borrarLogo(){
 }
 
 function switchTab(id){
+  // Al cambiar de pestaña, sincronizar lo que haya pendiente
+  scheduleSyncSupa();
   var tabs=['costes','empresa','cliente','trabajo','resultado','rentabilidad','historial','clientes','presupuesto'];
   // Update nav buttons
   var btns=document.querySelectorAll('.nav-btn');
@@ -2140,6 +2143,13 @@ try {
 try {
   calc();
 } catch(e){ console.error('calc error:', e); }
+
+// Sync al perder foco en cualquier input/textarea/select
+document.addEventListener('focusout', function(e){
+  if(e.target && (e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA'||e.target.tagName==='SELECT')){
+    scheduleSyncSupa();
+  }
+});
 </script>
 </body>
 </html>
