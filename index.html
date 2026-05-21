@@ -679,20 +679,71 @@ function initSupabase(){
 
 // ── Aprobación de usuario ────────────────────────
 function comprobarAprobacion(user){
-  // Por ahora acceso directo para todos los usuarios autenticados
-  // El sistema de aprobación se activa cuando la infraestructura esté lista
-  onLoginOk(user);
+  var email = user.email || '';
+
+  // Admin siempre tiene acceso directo
+  if(email === ADMIN_EMAIL){
+    onLoginOk(user);
+    return;
+  }
+
+  // Comprobar aprobación via fetch directo
+  _supa.auth.getSession().then(function(res){
+    var token = res.data&&res.data.session ? res.data.session.access_token : null;
+    return fetch(SUPA_URL+'/rest/v1/usuarios_aprobados?select=aprobado,bloqueado&user_id=eq.'+encodeURIComponent(user.id),{
+      headers:{
+        'apikey': SUPA_KEY,
+        'Authorization': 'Bearer '+(token||SUPA_KEY),
+        'Content-Type': 'application/json'
+      }
+    });
+  }).then(function(r){ return r.json(); })
+  .then(function(rows){
+    if(!Array.isArray(rows) || rows.length === 0){
+      // No existe fila — crear solicitud y mostrar espera
+      crearSolicitud(user);
+      return;
+    }
+    var d = rows[0];
+    if(d.bloqueado){
+      mostrarLoginError('Tu acceso ha sido denegado. Contacta con el administrador.');
+      _supa.auth.signOut();
+      return;
+    }
+    if(d.aprobado){
+      onLoginOk(user);
+    } else {
+      mostrarPendiente(user);
+    }
+  }).catch(function(e){
+    console.error('[AUTH] Error comprobando aprobacion:', e);
+    // Si falla la tabla, solo el admin pasa
+    if(email === ADMIN_EMAIL) onLoginOk(user);
+    else mostrarPendiente(user);
+  });
 }
 
 function crearSolicitud(user){
   var nombre = (user.user_metadata && user.user_metadata.full_name) || user.email || '';
-  _supa.from('usuarios_aprobados').insert({
-    user_id: user.id,
-    email: user.email,
-    nombre: nombre,
-    aprobado: false,
-    bloqueado: false,
-    fecha_solicitud: new Date().toISOString()
+  _supa.auth.getSession().then(function(res){
+    var token = res.data&&res.data.session ? res.data.session.access_token : null;
+    return fetch(SUPA_URL+'/rest/v1/usuarios_aprobados',{
+      method: 'POST',
+      headers:{
+        'apikey': SUPA_KEY,
+        'Authorization': 'Bearer '+(token||SUPA_KEY),
+        'Content-Type': 'application/json',
+        'Prefer': 'return=minimal'
+      },
+      body: JSON.stringify({
+        user_id: user.id,
+        email: user.email,
+        nombre: nombre,
+        aprobado: false,
+        bloqueado: false,
+        fecha_solicitud: new Date().toISOString()
+      })
+    });
   }).then(function(){
     mostrarPendiente(user);
   }).catch(function(){
