@@ -842,7 +842,7 @@ function loginConGoogle(){
   setSyncDot('syncing');
   _supa.auth.signInWithOAuth({
     provider: 'google',
-    options:{ redirectTo: window.location.href }
+    options:{ redirectTo: 'https://dxfmotorsport.github.io/dxf-cotizador/' }
   }).catch(function(e){
     mostrarLoginError('Error al conectar con Google: ' + (e.message||e));
     setSyncDot('error');
