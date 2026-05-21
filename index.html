@@ -640,15 +640,7 @@ function initSupabase(){
   }
 
   try{
-    _supa = supabase.createClient(SUPA_URL, SUPA_KEY, {
-      auth: {
-        persistSession: true,
-        autoRefreshToken: true,
-        detectSessionInUrl: true,
-        storage: window.localStorage,
-        storageKey: 'sb-rajzjjovoeksrwpducwz-auth-token'
-      }
-    });
+    _supa = supabase.createClient(SUPA_URL, SUPA_KEY);
   }catch(e){
     console.error('Supabase init error:', e);
     activarModoLocal(false);
@@ -1038,16 +1030,16 @@ function cargarDesdeSupa(){
 }
 
 function getSupaAuth(callback){
-  // Obtener sesión activa y pasarla al callback con cliente autenticado
+  // Usar el cliente principal _supa — ya tiene la sesión activa
   _supa.auth.getSession().then(function(res){
-    var token = res.data && res.data.session ? res.data.session.access_token : null;
-    if(!token){ setSyncDot('error'); console.error('[SYNC] Sin token'); return; }
-    // Crear cliente con el token explícito
-    var client = supabase.createClient(SUPA_URL, SUPA_KEY, {
-      global: { headers: { Authorization: 'Bearer ' + token } },
-      auth: { persistSession: false }
-    });
-    callback(client);
+    if(!res.data || !res.data.session){
+      setSyncDot('error');
+      console.error('[SYNC] Sin sesión activa');
+      mostrarToast('Sin sesion activa. Vuelve a iniciar sesion.', '#f87171');
+      return;
+    }
+    console.log('[SYNC] Sesión OK, token:', res.data.session.access_token.substring(0,20)+'...');
+    callback(_supa);
   });
 }
 
@@ -1070,8 +1062,8 @@ function subirDatosLocales(){
         return client.from('datos_usuario').insert(payload);
       } else if(check.error){
         var ce = check.error.message || check.error.code || JSON.stringify(check.error);
-        console.error('[SYNC] Error al verificar fila:', ce);
-        mostrarToast('Check error: ' + ce, '#f87171');
+        console.error('[SYNC] Error al verificar fila:', JSON.stringify(check.error));
+        mostrarToast('RLS error: ' + ce + ' | uid:' + (_user?_user.id.substring(0,8):'null'), '#f87171');
         throw check.error;
       } else {
         // Ya existe → UPDATE
