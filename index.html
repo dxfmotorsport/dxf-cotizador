@@ -103,7 +103,23 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-siz
 .hbadge.urg{background:#FAEEDA;color:#633806}
 .hbadge.fh{background:#FCEBEB;color:#791F1F}
 .hbadge.serie{background:#EAF3DE;color:#27500A}
+.hbadge.imp3d{background:#F3EEFF;color:#5B21B6}
 .empty{font-size:13px;color:#aaa;padding:2rem 0;text-align:center}
+/* ── TIPO TOGGLE (mecanizado / 3D) ── */
+.tipo-toggle{display:flex;gap:0;margin-bottom:12px;border-radius:9px;overflow:hidden;border:2px solid #e0e0e0}
+.tipo-btn{flex:1;padding:9px 6px;font-size:12px;font-weight:600;cursor:pointer;border:none;background:#f8f8f8;color:#888;text-align:center;touch-action:manipulation;transition:background .15s,color .15s;line-height:1.2}
+.tipo-btn:active{opacity:.8}
+.tipo-btn.act-mec{background:#185FA5;color:#fff}
+.tipo-btn.act-cnc{background:#16A34A;color:#fff}
+.tipo-btn.act-imp3d{background:#7C3AED;color:#fff}
+/* 3D info row */
+.imp3d-info{margin-top:8px;padding:8px 10px;background:#F3EEFF;border-radius:8px;font-size:12px;display:flex;justify-content:space-between}
+.imp3d-info span:first-child{color:#5B21B6}
+.imp3d-info span:last-child{font-weight:700;color:#7C3AED}
+/* CNC info row */
+.cnc-info{margin-top:8px;padding:8px 10px;background:#DCFCE7;border-radius:8px;font-size:12px;display:flex;justify-content:space-between}
+.cnc-info span:first-child{color:#15803D}
+.cnc-info span:last-child{font-weight:700;color:#16A34A}
 /* PRESUPUESTO */
 .pres-actions{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}.pres-actions .btn{flex:1;text-align:center;min-width:80px}
 .pres-doc{background:#fff;border-radius:12px;padding:16px;box-shadow:0 1px 3px rgba(0,0,0,.08)}
@@ -385,6 +401,20 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-siz
     </div>
   </div>
   <div class="card">
+    <div class="card-title">&#128424;&#65039; Impresión 3D — Coste máquina</div>
+    <div class="g2">
+      <div class="field"><label>FDM (&#8364;/h)</label><input type="number" id="imp3d_maq_fdm" value="3" min="0" step="0.5" oninput="guardarAjustes()"><div class="note">Amortiz. + electricidad impresora</div></div>
+      <div class="field"><label>Resina / SLS (&#8364;/h)</label><input type="number" id="imp3d_maq_resin" value="5" min="0" step="0.5" oninput="guardarAjustes()"><div class="note">Impresora de mayor coste</div></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">&#128421;&#65039; Fresadora CNC — Coste máquina</div>
+    <div class="g2">
+      <div class="field"><label>CNC router (&#8364;/h)</label><input type="number" id="cnc_maq_hora" value="3" min="0" step="0.5" oninput="guardarAjustes()"><div class="note">Genmitsu / router de banco</div></div>
+      <div class="field"><label>CNC industrial (&#8364;/h)</label><input type="number" id="cnc_maq_ind" value="8" min="0" step="0.5" oninput="guardarAjustes()"><div class="note">CNC de mayor envergadura</div></div>
+    </div>
+  </div>
+  <div class="card">
     <div class="card-title">Descuento por serie</div>
     <table class="dto-tabla">
       <tr><th>Cantidad</th><th>Descuento</th><th>Motivo</th></tr>
@@ -471,7 +501,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-siz
     <div id="av_urg" class="av warn" style="display:none"><span class="al">Recargo urgencia +25%</span><span class="aval" id="av_urg_v">-</span></div>
     <div id="av_fh" class="av danger" style="display:none"><span class="al">Recargo fuera horario +50%</span><span class="aval" id="av_fh_v">-</span></div>
     <div class="metrics" style="margin-top:0">
-      <div class="metric"><div class="ml">Tiempo mecanizado</div><div class="mv" id="out_tiempo">-</div></div>
+      <div class="metric"><div class="ml">Tiempo trabajo</div><div class="mv" id="out_tiempo">-</div></div>
       <div class="metric"><div class="ml">Precio/ud (s/IVA)</div><div class="mv" id="out_unit">-</div></div>
       <div class="metric"><div class="ml">Total con IVA</div><div class="mv blue" id="out_pedido_iva">-</div></div>
     </div>
@@ -1208,7 +1238,11 @@ function construirPayload(){
       mano: safeN('mano','dxf_mano'),
       margen: safeN('margen','dxf_margen'),
       minimo: safeN('minimo','dxf_minimo'),
-      minimo_mat: safeN('minimo_mat','dxf_minimo_mat')
+      minimo_mat: safeN('minimo_mat','dxf_minimo_mat'),
+      imp3d_fdm: safeN('imp3d_maq_fdm','dxf_imp3d_fdm'),
+      imp3d_resin: safeN('imp3d_maq_resin','dxf_imp3d_resin'),
+      cnc_hora: safeN('cnc_maq_hora','dxf_cnc_hora'),
+      cnc_ind: safeN('cnc_maq_ind','dxf_cnc_ind')
     },
     historial: historial.slice(0, 100),
     clientes: clientes,
@@ -1238,6 +1272,10 @@ function aplicarAjustes(aj){
     if(aj.margen!==undefined){ var e=document.getElementById('margen'); if(e)e.value=aj.margen; }
     if(aj.minimo!==undefined){ var e=document.getElementById('minimo'); if(e)e.value=aj.minimo; }
     if(aj.minimo_mat!==undefined){ var e=document.getElementById('minimo_mat'); if(e)e.value=aj.minimo_mat; }
+    if(aj.imp3d_fdm!==undefined){ var e=document.getElementById('imp3d_maq_fdm'); if(e)e.value=aj.imp3d_fdm; }
+    if(aj.imp3d_resin!==undefined){ var e=document.getElementById('imp3d_maq_resin'); if(e)e.value=aj.imp3d_resin; }
+    if(aj.cnc_hora!==undefined){ var e=document.getElementById('cnc_maq_hora'); if(e)e.value=aj.cnc_hora; }
+    if(aj.cnc_ind!==undefined){ var e=document.getElementById('cnc_maq_ind'); if(e)e.value=aj.cnc_ind; }
     calc();
   }catch(e){}
 }
@@ -1585,13 +1623,40 @@ function guardarYGenerar(){
   var totalBase=0, totalIva=0;
   var lineasCalc = lineas.map(function(l){
     var me = document.getElementById('lmat_'+l.id);
-    var matLabel = me ? me.options[me.selectedIndex].text : l.mat;
+    var matLabel;
+    var techLabel = '';
+    if(l.tipo === 'impresion3d'){
+      var m3d = MAT_3D.find(function(m){ return m.id===l.imp_mat3d; });
+      matLabel = m3d ? m3d.label : (l.imp_mat3d||'Material 3D');
+      var techMap = {fdm:'FDM',resin:'Resina',sls:'SLS'};
+      techLabel = techMap[l.imp_tech]||l.imp_tech||'FDM';
+    } else if(l.tipo === 'fresadora'){
+      var mcnc = MAT_CNC.find(function(m){ return m.id===l.cnc_mat; });
+      matLabel = mcnc ? mcnc.label : (l.cnc_mat||'Material CNC');
+      techLabel = l.cnc_tipo==='industrial' ? 'CNC Industrial' : 'Fresadora CNC';
+    } else {
+      matLabel = me ? me.options[me.selectedIndex].text : l.mat;
+    }
     var res = calcLinea(l);
     totalBase += res.total;
     totalIva += res.total_iva;
-    var ops = OPS_DEF.filter(function(op){ return l.ops[op.id]; })
-      .map(function(op){ return '- '+op.label+' ('+l.times[op.id]+' min)'; });
-    return {l:l, res:res, matLabel:matLabel, ops:ops};
+    var ops;
+    if(l.tipo === 'impresion3d'){
+      var tiempo_h = (l.imp_tiempo_h||0) + (l.imp_tiempo_m||0)/60;
+      ops = [
+        '- Tecnología: '+techLabel,
+        '- Tiempo impresión: '+Math.round(tiempo_h*60)+' min',
+        '- Peso: '+(l.imp_peso_g||0)+'g',
+        '- Postproceso: '+(l.imp_postproceso||0)+' min'
+      ];
+    } else if(l.tipo === 'fresadora'){
+      ops = OPS_CNC.filter(function(op){ return l.cnc_ops&&l.cnc_ops[op.id]; })
+        .map(function(op){ return '- '+op.label+' ('+(l.cnc_times[op.id]||0)+' min)'; });
+    } else {
+      ops = OPS_DEF.filter(function(op){ return l.ops[op.id]; })
+        .map(function(op){ return '- '+op.label+' ('+l.times[op.id]+' min)'; });
+    }
+    return {l:l, res:res, matLabel:matLabel, techLabel:techLabel, tipo:l.tipo, ops:ops};
   });
 
   var cll=[cli];
@@ -1609,7 +1674,8 @@ function guardarYGenerar(){
     total:totalIva.toFixed(2), cli:cli, urg:urg, fh:fh, serie:false,
     snap:{
       lineasCalc:lineasCalc.map(function(lc){
-        return {desc:lc.l.desc, matLabel:lc.matLabel, cant:lc.l.cant,
+        return {desc:lc.l.desc, matLabel:lc.matLabel, techLabel:lc.techLabel||'', tipo:lc.tipo||'mecanizado',
+                cant:lc.l.cant,
                 ops:lc.ops, res:{
                   mins:lc.res.mins, unit:lc.res.unit, iva:lc.res.iva,
                   unit_iva:lc.res.unit_iva, total:lc.res.total, total_iva:lc.res.total_iva,
@@ -1653,9 +1719,21 @@ function buildPres(){
   var rows = d.lineasCalc.map(function(lc, i){
     var _dto=lc.res&&lc.res.dto?lc.res.dto:{pct:0,label:''};
     var dto_r = _dto.pct>0?'<br><small style="color:#27500A">Dto. '+_dto.label+'</small>':'';
+    var is3d = lc.tipo === 'impresion3d';
+    var isCnc = lc.tipo === 'fresadora';
+    var matCell = is3d
+      ? (lc.matLabel||'—') + '<br><small style="color:#7C3AED;font-weight:600">🖨️ '+lc.techLabel+'</small>'
+      : isCnc
+      ? (lc.matLabel||'—') + '<br><small style="color:#16A34A;font-weight:600">🖥️ '+lc.techLabel+'</small>'
+      : lc.matLabel;
+    var badgeHtml = is3d
+      ? '<span style="display:inline-block;font-size:9px;background:#F3EEFF;color:#5B21B6;padding:1px 5px;border-radius:3px;margin-left:4px;font-weight:600">3D</span>'
+      : isCnc
+      ? '<span style="display:inline-block;font-size:9px;background:#DCFCE7;color:#15803D;padding:1px 5px;border-radius:3px;margin-left:4px;font-weight:600">CNC</span>'
+      : '';
     return '<tr>'
-      +'<td>'+(lc.desc||'Pieza '+(i+1))+extrasLabel+'<div class="pops">'+(Array.isArray(lc.ops)?lc.ops.join('<br>'):'')+'</div>'+dto_r+'</td>'
-      +'<td>'+lc.matLabel+'</td>'
+      +'<td>'+(lc.desc||'Pieza '+(i+1))+extrasLabel+badgeHtml+'\n<div class="pops">'+(Array.isArray(lc.ops)?lc.ops.join('<br>'):'')+'</div>'+dto_r+'</td>'
+      +'<td>'+matCell+'</td>'
       +'<td>'+lc.res.mins+' min</td>'
       +'<td class="r">'+lc.l.cant+'</td>'
       +'<td class="r">'+lc.res.unit.toFixed(2)+' €</td>'
@@ -1746,8 +1824,17 @@ function renderHist(){
   var html='';
   for(var i=0;i<historial.length;i++){
     var h=historial[i];
+    // Detect CNC/3D from snap if flags not stored
+    var hasCnc = h.cnc || (h.snap&&h.snap.lineasCalc&&h.snap.lineasCalc.some(function(lc){return lc.tipo==='fresadora';}));
+    var has3d  = h.imp3d || (h.snap&&h.snap.lineasCalc&&h.snap.lineasCalc.some(function(lc){return lc.tipo==='impresion3d';}));
     var hBtn=h.snap&&h.snap.lineasCalc?'<button class="btn sm" onclick="verPresupuestoHistorial('+i+')" style="flex-shrink:0;padding:5px 10px">Ver</button>':'';
-    html+='<div class="hist-item"><span class="hist-num">'+h.num+'</span><div class="hist-desc"><div class="hd">'+h.desc+(h.urg?'<span class="hbadge urg">urgente</span>':'')+(h.fh?'<span class="hbadge fh">fuera horario</span>':'')+(h.serie?'<span class="hbadge serie">serie</span>':'')+'</div><div class="hm">'+h.fecha+' - '+h.cli+' - '+h.cant+' ud</div></div><span class="hist-precio">'+h.total+'€</span>'+hBtn+'</div>';
+    html+='<div class="hist-item"><span class="hist-num">'+h.num+'</span><div class="hist-desc"><div class="hd">'+h.desc
+      +(h.urg?'<span class="hbadge urg">urgente</span>':'')
+      +(h.fh?'<span class="hbadge fh">fuera horario</span>':'')
+      +(h.serie?'<span class="hbadge serie">serie</span>':'')
+      +(hasCnc?'<span class="hbadge" style="background:#DCFCE7;color:#15803D">CNC</span>':'')
+      +(has3d?'<span class="hbadge imp3d">3D</span>':'')
+      +'</div><div class="hm">'+h.fecha+' - '+h.cli+' - '+h.cant+' ud</div></div><span class="hist-precio">'+h.total+'€</span>'+hBtn+'</div>';
   }
   l.innerHTML=html;
 }
@@ -1794,15 +1881,91 @@ var OPS_DEF = [
   {id:'acab',  label:'Acabado / pulido', t:15}
 ];
 
+var MAT_3D = [
+  // FDM
+  {id:'pla',      label:'PLA',                coste_kg:22, tech:'fdm'},
+  {id:'petg',     label:'PETG',               coste_kg:26, tech:'fdm'},
+  {id:'abs',      label:'ABS',                coste_kg:28, tech:'fdm'},
+  {id:'asa',      label:'ASA',                coste_kg:35, tech:'fdm'},
+  {id:'tpu',      label:'TPU / Flexible',     coste_kg:42, tech:'fdm'},
+  {id:'nylon_fdm',label:'Nylon PA6/PA12',     coste_kg:55, tech:'fdm'},
+  {id:'pc',       label:'Policarbonato PC',   coste_kg:60, tech:'fdm'},
+  {id:'pla_cf',   label:'PLA + fibra CF',     coste_kg:68, tech:'fdm'},
+  {id:'petg_cf',  label:'PETG + fibra CF',    coste_kg:72, tech:'fdm'},
+  // Resina
+  {id:'resin_std', label:'Resina estándar',   coste_kg:45, tech:'resin'},
+  {id:'resin_abs', label:'Resina ABS-like',   coste_kg:58, tech:'resin'},
+  {id:'resin_dura',label:'Resina dura/rígida',coste_kg:72, tech:'resin'},
+  {id:'resin_flex',label:'Resina flexible',   coste_kg:65, tech:'resin'},
+  // SLS
+  {id:'sls_pa12',  label:'SLS Nylon PA12',    coste_kg:90, tech:'sls'},
+  {id:'sls_pa12cf',label:'SLS PA12-CF',       coste_kg:130,tech:'sls'},
+  // Otro
+  {id:'otro_3d',   label:'Otro material',     coste_kg:30, tech:'fdm'}
+];
+
+var OPS_CNC = [
+  {id:'prep_cnc',  label:'Preparación / sujeción',    t:15},
+  {id:'desbaste',  label:'Desbaste / vaciado (pocket)',t:30},
+  {id:'contorno',  label:'Contorneado / corte',        t:20},
+  {id:'grabado',   label:'Grabado / engraving',        t:25},
+  {id:'talad_cnc', label:'Taladrado CNC',              t:10},
+  {id:'acab_cnc',  label:'Acabado / lijado',           t:15}
+];
+
+var MAT_CNC = [
+  // Maderas y tableros
+  {id:'mdf_cnc',      label:'MDF'},
+  {id:'dm_lacado',    label:'MDF lacado / melamina'},
+  {id:'pino_cnc',     label:'Pino / abeto'},
+  {id:'haya_cnc',     label:'Haya / roble'},
+  {id:'contra_chopo', label:'Contrachapado chopo'},
+  {id:'contra_bal',   label:'Contrachapado báltico'},
+  // Plásticos
+  {id:'acrilico_cnc', label:'Acrílico (PMMA)'},
+  {id:'pvc_foam_cnc', label:'PVC espumado (Forex)'},
+  {id:'hdpe_cnc',     label:'HDPE'},
+  {id:'delrin_cnc',   label:'Delrin / POM-C'},
+  {id:'nylon_cnc',    label:'Nylon / PA'},
+  // Metales blandos
+  {id:'alu_cnc',      label:'Aluminio 6061/6063'},
+  {id:'laton_cnc',    label:'Latón'},
+  {id:'cobre_cnc',    label:'Cobre'},
+  // Otros
+  {id:'foam_cnc',     label:'Espuma técnica / XPS'},
+  {id:'fc_cnc',       label:'Fibra de carbono'},
+  {id:'pcb_cnc',      label:'PCB / FR4'},
+  {id:'otro_cnc',     label:'Otro material'}
+];
+
 function addLinea(preset){
   var id = ++lineaId;
   var l = {
     id:id,
+    tipo: preset?preset.tipo:'mecanizado',
     desc: preset?preset.desc:'',
     mat: preset?preset.mat:'acero_f114',
     mat_coste:0, mat_desp:20, cant:1,
     ops: preset?preset.ops:{'setup':true,'cilin':true},
-    times: preset?preset.times:{setup:10,cilin:25,rosca:20,talad:15,pieza:45,acab:15}
+    times: preset?preset.times:{setup:10,cilin:25,rosca:20,talad:15,pieza:45,acab:15},
+    // Campos impresión 3D
+    imp_tech: preset?preset.imp_tech:'fdm',
+    imp_tiempo_h: preset?preset.imp_tiempo_h:0,
+    imp_tiempo_m: preset?preset.imp_tiempo_m:30,
+    imp_peso_g: preset?preset.imp_peso_g:50,
+    imp_mat3d: preset?preset.imp_mat3d:'pla',
+    imp_mat_coste_kg: preset?preset.imp_mat_coste_kg:22,
+    imp_maq_hora: preset?preset.imp_maq_hora:(n('imp3d_maq_fdm')||3),
+    imp_postproceso: preset?preset.imp_postproceso:30,
+    imp_desp: preset?preset.imp_desp:15,
+    // Campos fresadora CNC
+    cnc_tipo: preset?preset.cnc_tipo:'router',
+    cnc_mat: preset?preset.cnc_mat:'mdf_cnc',
+    cnc_mat_coste: preset?preset.cnc_mat_coste:0,
+    cnc_mat_desp: preset?preset.cnc_mat_desp:15,
+    cnc_maq_hora: preset?preset.cnc_maq_hora:(n('cnc_maq_hora')||3),
+    cnc_ops: preset?preset.cnc_ops:{'prep_cnc':true,'contorno':true},
+    cnc_times: preset?preset.cnc_times:{prep_cnc:15,desbaste:30,contorno:20,grabado:25,talad_cnc:10,acab_cnc:15}
   };
   lineas.push(l);
   renderLineas();
@@ -1820,20 +1983,47 @@ function getLineaData(id){
   if(!l) return null;
   var _g = function(eid){ var e=document.getElementById(eid); return e?e:{}; };
   l.desc = _g('ldesc_'+id).value||l.desc||'';
-  l.mat = _g('lmat_'+id).value||l.mat||'acero_f114';
-  l.mat_coste = parseFloat(_g('lmat_coste_'+id).value)||0;
-  l.mat_desp = parseFloat(_g('lmat_desp_'+id).value)||0;
   l.cant = Math.max(1, parseInt(_g('lcant_'+id).value)||1);
-  OPS_DEF.forEach(function(op){
-    var cb=document.getElementById('lop_'+op.id+'_'+id);
-    var ti=document.getElementById('lt_'+op.id+'_'+id);
-    if(cb) l.ops[op.id]=cb.checked;
-    if(ti) l.times[op.id]=parseFloat(ti.value)||0;
-  });
+  l.tipo = (_g('ltipo_'+id).value)||l.tipo||'mecanizado';
+  if(l.tipo === 'impresion3d'){
+    l.imp_tech = _g('limp_tech_'+id).value||'fdm';
+    l.imp_tiempo_h = parseInt(_g('limp_th_'+id).value)||0;
+    l.imp_tiempo_m = parseInt(_g('limp_tm_'+id).value)||0;
+    l.imp_peso_g = parseFloat(_g('limp_peso_'+id).value)||0;
+    l.imp_mat3d = _g('limp_mat_'+id).value||'pla';
+    l.imp_mat_coste_kg = parseFloat(_g('limp_mat_kg_'+id).value)||22;
+    l.imp_maq_hora = parseFloat(_g('limp_maq_hora_'+id).value)||3;
+    l.imp_postproceso = parseInt(_g('limp_post_'+id).value)||0;
+    l.imp_desp = parseFloat(_g('limp_desp_'+id).value)||15;
+  } else if(l.tipo === 'fresadora'){
+    l.cnc_tipo = _g('lcnc_tipo_'+id).value||'router';
+    l.cnc_mat = _g('lcnc_mat_'+id).value||'mdf_cnc';
+    l.cnc_mat_coste = parseFloat(_g('lcnc_mat_coste_'+id).value)||0;
+    l.cnc_mat_desp = parseFloat(_g('lcnc_mat_desp_'+id).value)||15;
+    l.cnc_maq_hora = parseFloat(_g('lcnc_maq_hora_'+id).value)||3;
+    OPS_CNC.forEach(function(op){
+      var cb=document.getElementById('lcop_'+op.id+'_'+id);
+      var ti=document.getElementById('lct_'+op.id+'_'+id);
+      if(cb) l.cnc_ops[op.id]=cb.checked;
+      if(ti) l.cnc_times[op.id]=parseFloat(ti.value)||0;
+    });
+  } else {
+    l.mat = _g('lmat_'+id).value||l.mat||'acero_f114';
+    l.mat_coste = parseFloat(_g('lmat_coste_'+id).value)||0;
+    l.mat_desp = parseFloat(_g('lmat_desp_'+id).value)||0;
+    OPS_DEF.forEach(function(op){
+      var cb=document.getElementById('lop_'+op.id+'_'+id);
+      var ti=document.getElementById('lt_'+op.id+'_'+id);
+      if(cb) l.ops[op.id]=cb.checked;
+      if(ti) l.times[op.id]=parseFloat(ti.value)||0;
+    });
+  }
   return l;
 }
 
 function calcLinea(l){
+  if(l.tipo === 'impresion3d') return calcLinea3D(l);
+  if(l.tipo === 'fresadora')   return calcLineaCNC(l);
   var coste_h = FIJOS/HORAS_BASE + n('mano');
   var margen_pct = n('margen')/100;
   var mins = 0;
@@ -1853,6 +2043,82 @@ function calcLinea(l){
   unit = unit + unit*rec_pct;
   return {mins:mins, mat:mat, mec:mec, unit:unit, iva:unit*IVA, unit_iva:unit*(1+IVA),
           total:unit*l.cant, total_iva:unit*(1+IVA)*l.cant, cant:l.cant, dto:dto, dto_eur:dto_eur};
+}
+
+function calcLinea3D(l){
+  var margen_pct = n('margen')/100;
+  var mano = n('mano');
+  var tiempo_h = (l.imp_tiempo_h||0) + (l.imp_tiempo_m||0)/60;
+  // Coste máquina por hora (usa valor del campo o fallback de ajustes según tech)
+  var maq_hora = (l.imp_maq_hora !== undefined && l.imp_maq_hora !== null && l.imp_maq_hora !== '')
+    ? (parseFloat(l.imp_maq_hora)||0)
+    : (l.imp_tech==='fdm' ? n('imp3d_maq_fdm') : n('imp3d_maq_resin')) || 3;
+  var desp_factor = 1 + Math.max(0,Math.min(200,l.imp_desp||15))/100;
+  // Coste impresión = máquina × horas
+  var cost_maquina = maq_hora * tiempo_h;
+  // Coste material = peso(g)/1000 × €/kg × desperdicio
+  var cost_material = (l.imp_peso_g||0) / 1000 * (l.imp_mat_coste_kg||22) * desp_factor;
+  // Coste operario = tarifa horaria × tiempo postproceso
+  var cost_operario = mano * (l.imp_postproceso||0) / 60;
+  var sub = cost_maquina + cost_material + cost_operario;
+  var mar = sub * margen_pct;
+  var base = sub + mar;
+  // Mínimo de taller (siempre con material en 3D)
+  var min_ap = n('minimo_mat');
+  var unit = (base < min_ap && min_ap > 0) ? min_ap : base;
+  // Descuento serie
+  var dto = getDto(l.cant);
+  var dto_eur = unit * dto.pct;
+  unit = unit - dto_eur;
+  // Recargos
+  var urg = rch('urgente'), fh = rch('fueraho');
+  var rec_pct = fh?.5:urg?.25:0;
+  unit = unit + unit*rec_pct;
+  var mins = Math.round(tiempo_h * 60);
+  return {
+    mins: mins, mat: cost_material, mec: cost_maquina,
+    unit: unit, iva: unit*IVA, unit_iva: unit*(1+IVA),
+    total: unit*l.cant, total_iva: unit*(1+IVA)*l.cant,
+    cant: l.cant, dto: dto, dto_eur: dto_eur, tipo: 'impresion3d'
+  };
+}
+
+function calcLineaCNC(l){
+  var margen_pct = n('margen')/100;
+  var mano = n('mano');
+  // Coste máquina: usa campo por pieza o fallback de ajustes según tipo
+  var maq_hora = (l.cnc_maq_hora !== undefined && l.cnc_maq_hora !== null && l.cnc_maq_hora !== '')
+    ? (parseFloat(l.cnc_maq_hora)||0)
+    : (l.cnc_tipo==='industrial' ? n('cnc_maq_ind') : n('cnc_maq_hora')) || 3;
+  // Tiempo total operaciones
+  var mins = 0;
+  if(l.cnc_ops && l.cnc_times){
+    OPS_CNC.forEach(function(op){ if(l.cnc_ops[op.id]) mins += (l.cnc_times[op.id]||0); });
+  }
+  // Coste máquina + operario (ambos presentes durante el mecanizado CNC)
+  var coste_h = maq_hora + mano;
+  var mat = (l.cnc_mat_coste||0) * (1 + Math.max(0,Math.min(200,l.cnc_mat_desp||15))/100);
+  var mec = coste_h * (mins/60);
+  var sub = mec + mat;
+  var mar = sub * margen_pct;
+  var base = sub + mar;
+  // Mínimo de taller
+  var min_ap = mat>0 ? Math.max(n('minimo')+mat, n('minimo_mat')) : n('minimo');
+  var unit = (base < min_ap && min_ap > 0) ? min_ap : base;
+  // Descuento serie
+  var dto = getDto(l.cant);
+  var dto_eur = unit * dto.pct;
+  unit = unit - dto_eur;
+  // Recargos
+  var urg = rch('urgente'), fh = rch('fueraho');
+  var rec_pct = fh?.5:urg?.25:0;
+  unit = unit + unit*rec_pct;
+  return {
+    mins: mins, mat: mat, mec: mec,
+    unit: unit, iva: unit*IVA, unit_iva: unit*(1+IVA),
+    total: unit*l.cant, total_iva: unit*(1+IVA)*l.cant,
+    cant: l.cant, dto: dto, dto_eur: dto_eur, tipo: 'fresadora'
+  };
 }
 
 function aplicarPlantilla(id, tipo){
@@ -1896,6 +2162,11 @@ function renderLineas(){
     return;
   }
   container.innerHTML = lineas.map(function(l, idx){
+    var is3d = l.tipo === 'impresion3d';
+    var isCnc = l.tipo === 'fresadora';
+    var res = calcLinea(l);
+
+    // ── Sección Mecanizado ─────────────────────────
     var MAT_GROUPS = [
       {label:'Aceros', items:['acero_f114','acero_f125','acero_f111','acero_bonificado','acero_inox_430']},
       {label:'Inoxidables', items:['inox_304','inox_316','inox_303','inox_duplex']},
@@ -1921,25 +2192,13 @@ function renderLineas(){
         +'<input type="number" id="lt_'+op.id+'_'+l.id+'" value="'+(l.times[op.id]||op.t)+'" min="1" style="width:50px;padding:4px 5px;font-size:12px;border:1px solid #ddd;border-radius:6px;background:#fff;text-align:center;-webkit-appearance:none" oninput="syncLinea('+l.id+')">'
         +'<span class="op-unit">min</span></div>';
     }).join('');
-    var res = calcLinea(l);
-    return '<div style="border:1px solid #e0e0e0;border-radius:10px;padding:14px;margin-bottom:10px;background:#fafafa">'
-      +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">'
-        +'<span style="font-weight:600;font-size:13px;color:#185FA5">Pieza '+(idx+1)+'</span>'
-        +'<div style="display:flex;align-items:center;gap:8px">'
-          +'<span style="font-size:12px;color:#888"><span id="linea_precio_hdr_'+l.id+'">'+res.total_iva.toFixed(2)+' €</span> (con IVA)</span>'
-          +(lineas.length>1?'<button class="btn sm red" onclick="removeLinea('+l.id+')">Eliminar</button>':'')
-        +'</div>'
-      +'</div>'
-      +'<div class="g2" style="margin-bottom:8px">'
-        +'<div class="field"><label>Descripcion</label><input type="text" id="ldesc_'+l.id+'" value="'+esc(l.desc)+'" placeholder="Ej: Eje transmision" oninput="syncLinea('+l.id+')"></div>'
-        +'<div class="field"><label>Cantidad</label><input type="number" id="lcant_'+l.id+'" value="'+l.cant+'" min="1" oninput="syncLinea('+l.id+')"></div>'
-      +'</div>'
+    var mecSection = '<div id="lsec_mec_'+l.id+'" style="display:'+((is3d||isCnc)?'none':'block')+'">'
       +'<div class="g3" style="margin-bottom:10px">'
         +'<div class="field"><label>Material</label><select id="lmat_'+l.id+'" onchange="syncLinea('+l.id+')">'+matOpts+'</select></div>'
-        +'<div class="field"><label>Coste material (€)</label><input type="number" id="lmat_coste_'+l.id+'" value="'+l.mat_coste+'" min="0" step="0.5" oninput="syncLinea('+l.id+')"></div>'
+        +'<div class="field"><label>Coste material (&#8364;)</label><input type="number" id="lmat_coste_'+l.id+'" value="'+l.mat_coste+'" min="0" step="0.5" oninput="syncLinea('+l.id+')"></div>'
         +'<div class="field"><label>Desperdicio (%)</label><input type="number" id="lmat_desp_'+l.id+'" value="'+l.mat_desp+'" min="0" max="100" oninput="syncLinea('+l.id+')"></div>'
       +'</div>'
-      +'<div class="card-title" style="margin-bottom:6px;margin-top:10px">Plantilla rapida</div>'
+      +'<div class="card-title" style="margin-bottom:6px;margin-top:2px">Plantilla rápida</div>'
       +'<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">'
         +'<button class="btn sm" data-lid="'+l.id+'" data-t="eje" onclick="aplicarPlantilla(+this.dataset.lid,this.dataset.t)">Eje</button>'
         +'<button class="btn sm" data-lid="'+l.id+'" data-t="buje" onclick="aplicarPlantilla(+this.dataset.lid,this.dataset.t)">Buje</button>'
@@ -1954,10 +2213,207 @@ function renderLineas(){
         +'<span id="linea_total_'+l.id+'" style="font-weight:700;color:#185FA5">Total: '+res.total_iva.toFixed(2)+' €</span>'
       +'</div>'
       +'</div>';
+
+    // ── Sección Impresión 3D ───────────────────────
+    var mat3dMap = {};
+    MAT_3D.forEach(function(m){ mat3dMap[m.id]=m; });
+    // Opciones de material agrupadas por tecnología
+    var mat3dGrouped = [
+      {label:'FDM', ids:['pla','petg','abs','asa','tpu','nylon_fdm','pc','pla_cf','petg_cf']},
+      {label:'Resina (SLA/MSLA)', ids:['resin_std','resin_abs','resin_dura','resin_flex']},
+      {label:'SLS / Polvo', ids:['sls_pa12','sls_pa12cf']},
+      {label:'Otro', ids:['otro_3d']}
+    ];
+    var mat3dOpts = mat3dGrouped.map(function(g){
+      var opts = g.ids.map(function(mid){
+        var m = mat3dMap[mid]; if(!m) return '';
+        return '<option value="'+mid+'"'+(l.imp_mat3d===mid?' selected':'')+'>'+m.label+' (~'+m.coste_kg+' €/kg)</option>';
+      }).join('');
+      return '<optgroup label="'+g.label+'">'+opts+'</optgroup>';
+    }).join('');
+    // Tiempo de impresión display
+    var techOptions = [
+      {v:'fdm',   l:'FDM (filamento)'},
+      {v:'resin', l:'Resina (SLA/MSLA)'},
+      {v:'sls',   l:'SLS / Polvo'}
+    ];
+    var techOpts = techOptions.map(function(t){ return '<option value="'+t.v+'"'+(l.imp_tech===t.v?' selected':'')+'>'+t.l+'</option>'; }).join('');
+    var imp3dSection = '<div id="lsec_3d_'+l.id+'" style="display:'+(is3d?'block':'none')+'">'
+      +'<div class="g2" style="margin-bottom:8px">'
+        +'<div class="field"><label>Tecnología</label><select id="limp_tech_'+l.id+'" onchange="onImpTechChange('+l.id+')">'+techOpts+'</select></div>'
+        +'<div class="field"><label>Material</label><select id="limp_mat_'+l.id+'" onchange="onImpMatChange('+l.id+')">'+mat3dOpts+'</select></div>'
+      +'</div>'
+      +'<div class="g3" style="margin-bottom:8px">'
+        +'<div class="field"><label>&#8364;/kg material</label><input type="number" id="limp_mat_kg_'+l.id+'" value="'+(l.imp_mat_coste_kg||22)+'" min="0" step="1" oninput="syncLinea('+l.id+')"></div>'
+        +'<div class="field"><label>Peso pieza (g)</label><input type="number" id="limp_peso_'+l.id+'" value="'+(l.imp_peso_g||50)+'" min="0" step="5" oninput="syncLinea('+l.id+')"></div>'
+        +'<div class="field"><label>Desperdicio (%)</label><input type="number" id="limp_desp_'+l.id+'" value="'+(l.imp_desp||15)+'" min="0" max="100" oninput="syncLinea('+l.id+')" title="Soportes + fallos estimados"></div>'
+      +'</div>'
+      +'<div class="g3" style="margin-bottom:8px">'
+        +'<div class="field"><label>Tiempo impresión (h)</label><input type="number" id="limp_th_'+l.id+'" value="'+(l.imp_tiempo_h||0)+'" min="0" oninput="syncLinea('+l.id+')"></div>'
+        +'<div class="field"><label>Minutos</label><input type="number" id="limp_tm_'+l.id+'" value="'+(l.imp_tiempo_m||30)+'" min="0" max="59" oninput="syncLinea('+l.id+')"></div>'
+        +'<div class="field"><label>Coste máq. (&#8364;/h)</label><input type="number" id="limp_maq_hora_'+l.id+'" value="'+(l.imp_maq_hora||3)+'" min="0" step="0.5" oninput="syncLinea('+l.id+')" title="Amortiz. + electricidad impresora"></div>'
+      +'</div>'
+      +'<div class="field" style="margin-bottom:8px"><label>Tiempo operario — prep + postproceso (min)</label><input type="number" id="limp_post_'+l.id+'" value="'+(l.imp_postproceso||30)+'" min="0" step="5" oninput="syncLinea('+l.id+')"><div class="note">Preparación del fichero, cambio de filamento, retirada de soportes, limpieza...</div></div>'
+      +'<div class="imp3d-info">'
+        +'<span id="linea_info_3d_'+l.id+'">'+res.mins+' min impresión · Material: '+(l.imp_peso_g||50)+'g · Máquina: '+(l.imp_maq_hora||3).toFixed(1)+' €/h</span>'
+        +'<span id="linea_total_3d_'+l.id+'">Total: '+res.total_iva.toFixed(2)+' €</span>'
+      +'</div>'
+      +'</div>';
+
+    // ── Sección Fresadora CNC ──────────────────────
+    var cncMatOpts = MAT_CNC.map(function(m){
+      return '<option value="'+m.id+'"'+(l.cnc_mat===m.id?' selected':'')+'>'+m.label+'</option>';
+    }).join('');
+    var cncTipoOpts = [
+      {v:'router', l:'Router (Genmitsu / banco)'},
+      {v:'industrial', l:'CNC industrial'}
+    ].map(function(t){ return '<option value="'+t.v+'"'+(l.cnc_tipo===t.v?' selected':'')+'>'+t.l+'</option>'; }).join('');
+    var cncOpsHtml = OPS_CNC.map(function(op){
+      var checked = l.cnc_ops && l.cnc_ops[op.id];
+      var time = l.cnc_times && l.cnc_times[op.id] ? l.cnc_times[op.id] : op.t;
+      return '<div class="op-row">'
+        +'<input type="checkbox" id="lcop_'+op.id+'_'+l.id+'"'+(checked?' checked':'')+' onchange="syncLinea('+l.id+')">'
+        +'<label for="lcop_'+op.id+'_'+l.id+'" style="font-size:12px;flex:1;cursor:pointer">'+op.label+'</label>'
+        +'<input type="number" id="lct_'+op.id+'_'+l.id+'" value="'+time+'" min="1" style="width:50px;padding:4px 5px;font-size:12px;border:1px solid #ddd;border-radius:6px;background:#fff;text-align:center;-webkit-appearance:none" oninput="syncLinea('+l.id+')">'
+        +'<span class="op-unit">min</span></div>';
+    }).join('');
+    var cncSection = '<div id="lsec_cnc_'+l.id+'" style="display:'+(isCnc?'block':'none')+'">'
+      +'<div class="g2" style="margin-bottom:8px">'
+        +'<div class="field"><label>Tipo de máquina</label><select id="lcnc_tipo_'+l.id+'" onchange="onCncTipoChange('+l.id+')">'+cncTipoOpts+'</select></div>'
+        +'<div class="field"><label>Material</label><select id="lcnc_mat_'+l.id+'" onchange="syncLinea('+l.id+')">'+cncMatOpts+'</select></div>'
+      +'</div>'
+      +'<div class="g3" style="margin-bottom:8px">'
+        +'<div class="field"><label>Coste material (&#8364;)</label><input type="number" id="lcnc_mat_coste_'+l.id+'" value="'+(l.cnc_mat_coste||0)+'" min="0" step="0.5" oninput="syncLinea('+l.id+')"><div class="note">Coste del stock usado</div></div>'
+        +'<div class="field"><label>Desperdicio (%)</label><input type="number" id="lcnc_mat_desp_'+l.id+'" value="'+(l.cnc_mat_desp||15)+'" min="0" max="100" oninput="syncLinea('+l.id+')"></div>'
+        +'<div class="field"><label>Coste máq. (&#8364;/h)</label><input type="number" id="lcnc_maq_hora_'+l.id+'" value="'+(l.cnc_maq_hora||3)+'" min="0" step="0.5" oninput="syncLinea('+l.id+')"></div>'
+      +'</div>'
+      +'<div class="card-title" style="margin-bottom:6px;margin-top:2px">Plantilla rápida CNC</div>'
+      +'<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">'
+        +'<button class="btn sm" data-lid="'+l.id+'" data-t="corte_cnc" onclick="aplicarPlantillaCNC(+this.dataset.lid,this.dataset.t)">Corte</button>'
+        +'<button class="btn sm" data-lid="'+l.id+'" data-t="pocket_cnc" onclick="aplicarPlantillaCNC(+this.dataset.lid,this.dataset.t)">Vaciado</button>'
+        +'<button class="btn sm" data-lid="'+l.id+'" data-t="grabado_cnc" onclick="aplicarPlantillaCNC(+this.dataset.lid,this.dataset.t)">Grabado</button>'
+        +'<button class="btn sm" data-lid="'+l.id+'" data-t="pieza_cnc" onclick="aplicarPlantillaCNC(+this.dataset.lid,this.dataset.t)">Pieza completa</button>'
+      +'</div>'
+      +'<div class="card-title" style="margin-bottom:6px">Operaciones</div>'
+      +'<div class="ops-grid">'+cncOpsHtml+'</div>'
+      +'<div class="cnc-info" style="margin-top:8px">'
+        +'<span id="linea_info_cnc_'+l.id+'">'+res.mins+' min · CNC · Máq: '+(l.cnc_maq_hora||3).toFixed(1)+' €/h · Base: '+res.unit.toFixed(2)+' €/ud</span>'
+        +'<span id="linea_total_cnc_'+l.id+'">Total: '+res.total_iva.toFixed(2)+' €</span>'
+      +'</div>'
+      +'</div>';
+
+    var cardColor = is3d?'#C4B5FD':isCnc?'#86EFAC':'#e0e0e0';
+    var cardBg    = is3d?'#FDFBFF':isCnc?'#F0FDF4':'#fafafa';
+    var hdrColor  = is3d?'#7C3AED':isCnc?'#16A34A':'#185FA5';
+    return '<div style="border:2px solid '+cardColor+';border-radius:10px;padding:14px;margin-bottom:10px;background:'+cardBg+'">'
+      +'<input type="hidden" id="ltipo_'+l.id+'" value="'+(l.tipo||'mecanizado')+'">'
+      +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">'
+        +'<span style="font-weight:600;font-size:13px;color:'+hdrColor+'">Pieza '+(idx+1)+'</span>'
+        +'<div style="display:flex;align-items:center;gap:8px">'
+          +'<span style="font-size:12px;color:#888"><span id="linea_precio_hdr_'+l.id+'">'+res.total_iva.toFixed(2)+' €</span> (con IVA)</span>'
+          +(lineas.length>1?'<button class="btn sm red" onclick="removeLinea('+l.id+')">Eliminar</button>':'')
+        +'</div>'
+      +'</div>'
+      // Tipo toggle — 3 botones
+      +'<div class="tipo-toggle">'
+        +'<button id="ltbtn_mec_'+l.id+'" class="tipo-btn'+(!is3d&&!isCnc?' act-mec':'')+'" onclick="switchLineTipo('+l.id+',\'mecanizado\')">🔄 Torno</button>'
+        +'<button id="ltbtn_cnc_'+l.id+'" class="tipo-btn'+(isCnc?' act-cnc':'')+'" onclick="switchLineTipo('+l.id+',\'fresadora\')">🖥️ Fresadora</button>'
+        +'<button id="ltbtn_imp_'+l.id+'" class="tipo-btn'+(is3d?' act-imp3d':'')+'" onclick="switchLineTipo('+l.id+',\'impresion3d\')">🖨️ Imp. 3D</button>'
+      +'</div>'
+      // Campos comunes: descripción + cantidad
+      +'<div class="g2" style="margin-bottom:10px">'
+        +'<div class="field"><label>Descripción</label><input type="text" id="ldesc_'+l.id+'" value="'+esc(l.desc)+'" placeholder="'+(is3d?'Soporte motor, 3D':isCnc?'Panel acrílico, letrero':'Eje transmisión')+'" oninput="syncLinea('+l.id+')"></div>'
+        +'<div class="field"><label>Cantidad</label><input type="number" id="lcant_'+l.id+'" value="'+l.cant+'" min="1" oninput="syncLinea('+l.id+')"></div>'
+      +'</div>'
+      // Secciones modo-específicas
+      +mecSection
+      +cncSection
+      +imp3dSection
+      +'</div>';
   }).join('');
 }
 
 function esc(s){return (s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+function switchLineTipo(id, tipo){
+  var l = lineas.find(function(l){ return l.id===id; });
+  if(!l) return;
+  getLineaData(id);
+  l.tipo = tipo;
+  var tipoEl = document.getElementById('ltipo_'+id);
+  if(tipoEl) tipoEl.value = tipo;
+  // Toggle sections
+  var mecSec  = document.getElementById('lsec_mec_'+id);
+  var cncSec  = document.getElementById('lsec_cnc_'+id);
+  var imp3dSec= document.getElementById('lsec_3d_'+id);
+  if(mecSec)   mecSec.style.display   = tipo==='mecanizado'  ?'block':'none';
+  if(cncSec)   cncSec.style.display   = tipo==='fresadora'   ?'block':'none';
+  if(imp3dSec) imp3dSec.style.display = tipo==='impresion3d' ?'block':'none';
+  // Toggle button styles
+  var btnMec = document.getElementById('ltbtn_mec_'+id);
+  var btnCnc = document.getElementById('ltbtn_cnc_'+id);
+  var btnImp = document.getElementById('ltbtn_imp_'+id);
+  if(btnMec) btnMec.className = 'tipo-btn'+(tipo==='mecanizado'  ?' act-mec':'');
+  if(btnCnc) btnCnc.className = 'tipo-btn'+(tipo==='fresadora'   ?' act-cnc':'');
+  if(btnImp) btnImp.className = 'tipo-btn'+(tipo==='impresion3d' ?' act-imp3d':'');
+  updateLineaTotal(id);
+  calc();
+}
+
+function onCncTipoChange(id){
+  var tipoEl = document.getElementById('lcnc_tipo_'+id);
+  var maqEl  = document.getElementById('lcnc_maq_hora_'+id);
+  if(!tipoEl || !maqEl) return;
+  var t = tipoEl.value;
+  maqEl.value = t==='industrial' ? (n('cnc_maq_ind')||8) : (n('cnc_maq_hora')||3);
+  syncLinea(id);
+}
+
+function aplicarPlantillaCNC(id, tipo){
+  id = Number(id);
+  var l = lineas.find(function(l){ return l.id===id; });
+  if(!l) return;
+  OPS_CNC.forEach(function(op){ l.cnc_ops[op.id]=false; });
+  if(tipo==='corte_cnc'){
+    l.desc = l.desc||'Pieza cortada CNC';
+    l.cnc_ops.prep_cnc=true; l.cnc_ops.contorno=true;
+    l.cnc_times.prep_cnc=15; l.cnc_times.contorno=20;
+  } else if(tipo==='pocket_cnc'){
+    l.desc = l.desc||'Vaciado / pocket';
+    l.cnc_ops.prep_cnc=true; l.cnc_ops.desbaste=true;
+    l.cnc_times.prep_cnc=15; l.cnc_times.desbaste=35;
+  } else if(tipo==='grabado_cnc'){
+    l.desc = l.desc||'Grabado / engraving';
+    l.cnc_ops.prep_cnc=true; l.cnc_ops.grabado=true;
+    l.cnc_times.prep_cnc=10; l.cnc_times.grabado=20;
+  } else if(tipo==='pieza_cnc'){
+    l.desc = l.desc||'Pieza CNC completa';
+    l.cnc_ops.prep_cnc=true; l.cnc_ops.desbaste=true; l.cnc_ops.contorno=true; l.cnc_ops.acab_cnc=true;
+    l.cnc_times.prep_cnc=15; l.cnc_times.desbaste=30; l.cnc_times.contorno=20; l.cnc_times.acab_cnc=15;
+  }
+  renderLineas();
+  calc();
+}
+
+function onImpTechChange(id){
+  var techEl = document.getElementById('limp_tech_'+id);
+  var maqHoraEl = document.getElementById('limp_maq_hora_'+id);
+  if(!techEl || !maqHoraEl) return;
+  var tech = techEl.value;
+  var hora = tech==='fdm' ? (n('imp3d_maq_fdm')||3) : (n('imp3d_maq_resin')||5);
+  maqHoraEl.value = hora;
+  syncLinea(id);
+}
+
+function onImpMatChange(id){
+  var matEl = document.getElementById('limp_mat_'+id);
+  var matKgEl = document.getElementById('limp_mat_kg_'+id);
+  if(!matEl || !matKgEl) return;
+  var mid = matEl.value;
+  var m = MAT_3D.find(function(m){ return m.id===mid; });
+  if(m) matKgEl.value = m.coste_kg;
+  syncLinea(id);
+}
 function syncLinea(id){
   try { getLineaData(id); } catch(e){}
   try { updateLineaTotal(id); } catch(e){}
@@ -1968,12 +2424,24 @@ function updateLineaTotal(id){
   var l = lineas.find(function(l){ return l.id===id; });
   if(!l) return;
   var res = calcLinea(l);
-  var totalEl = document.getElementById('linea_total_'+id);
-  if(totalEl) totalEl.textContent = 'Total: '+res.total_iva.toFixed(2)+' €';
+  // Header price (unique — always outside sections)
   var headerEl = document.getElementById('linea_precio_hdr_'+id);
   if(headerEl) headerEl.textContent = res.total_iva.toFixed(2)+' €';
-  var infoEl = document.getElementById('linea_info_'+id);
-  if(infoEl) infoEl.textContent = res.mins+' min · Base: '+res.unit.toFixed(2)+' €/ud · IVA: '+res.iva.toFixed(2)+' €/ud';
+  // Info + total row: unique ID per tipo to avoid duplicate-ID bug
+  var suffix = l.tipo==='fresadora' ? '_cnc' : l.tipo==='impresion3d' ? '_3d' : '';
+  var totalEl = document.getElementById('linea_total'+suffix+'_'+id);
+  var infoEl  = document.getElementById('linea_info'+suffix+'_'+id);
+  if(totalEl) totalEl.textContent = 'Total: '+res.total_iva.toFixed(2)+' €';
+  if(infoEl){
+    if(l.tipo === 'impresion3d'){
+      var techLabel = l.imp_tech==='fdm'?'FDM':l.imp_tech==='resin'?'Resina':'SLS';
+      infoEl.textContent = res.mins+' min · '+techLabel+' · '+(l.imp_peso_g||0)+'g · Base: '+res.unit.toFixed(2)+' €/ud';
+    } else if(l.tipo === 'fresadora'){
+      infoEl.textContent = res.mins+' min · CNC · Máq: '+(l.cnc_maq_hora||3).toFixed(1)+' €/h · Base: '+res.unit.toFixed(2)+' €/ud';
+    } else {
+      infoEl.textContent = res.mins+' min · Base: '+res.unit.toFixed(2)+' €/ud · IVA: '+res.iva.toFixed(2)+' €/ud';
+    }
+  }
 }
 
 // CLIENTES - funciones de persistencia
@@ -2029,10 +2497,22 @@ function cargarAjustes(){
     var margen=parseFloat(localStorage.getItem('dxf_margen'));
     var minimo=parseFloat(localStorage.getItem('dxf_minimo'));
     var minimo_mat=parseFloat(localStorage.getItem('dxf_minimo_mat'));
+    var imp3d_fdm=parseFloat(localStorage.getItem('dxf_imp3d_fdm'));
+    var imp3d_resin=parseFloat(localStorage.getItem('dxf_imp3d_resin'));
     if(!isNaN(mano)&&mano>=0) document.getElementById('mano').value=mano;
     if(!isNaN(margen)&&margen>=0) document.getElementById('margen').value=margen;
     if(!isNaN(minimo)&&minimo>=0) document.getElementById('minimo').value=minimo;
     if(!isNaN(minimo_mat)&&minimo_mat>=0) document.getElementById('minimo_mat').value=minimo_mat;
+    var fdmEl=document.getElementById('imp3d_maq_fdm');
+    var resinEl=document.getElementById('imp3d_maq_resin');
+    if(fdmEl&&!isNaN(imp3d_fdm)&&imp3d_fdm>=0) fdmEl.value=imp3d_fdm;
+    if(resinEl&&!isNaN(imp3d_resin)&&imp3d_resin>=0) resinEl.value=imp3d_resin;
+    var cnc_hora=parseFloat(localStorage.getItem('dxf_cnc_hora'));
+    var cnc_ind=parseFloat(localStorage.getItem('dxf_cnc_ind'));
+    var cncEl=document.getElementById('cnc_maq_hora');
+    var cncIndEl=document.getElementById('cnc_maq_ind');
+    if(cncEl&&!isNaN(cnc_hora)&&cnc_hora>=0) cncEl.value=cnc_hora;
+    if(cncIndEl&&!isNaN(cnc_ind)&&cnc_ind>=0) cncIndEl.value=cnc_ind;
   } catch(e){}
   // Cargar historial
   try{
@@ -2048,6 +2528,14 @@ function guardarAjustes(){
   localStorage.setItem('dxf_margen',document.getElementById('margen').value);
   localStorage.setItem('dxf_minimo',document.getElementById('minimo').value);
   localStorage.setItem('dxf_minimo_mat',document.getElementById('minimo_mat').value);
+  var fdmEl=document.getElementById('imp3d_maq_fdm');
+  var resinEl=document.getElementById('imp3d_maq_resin');
+  if(fdmEl) localStorage.setItem('dxf_imp3d_fdm',fdmEl.value);
+  if(resinEl) localStorage.setItem('dxf_imp3d_resin',resinEl.value);
+  var cncEl=document.getElementById('cnc_maq_hora');
+  var cncIndEl=document.getElementById('cnc_maq_ind');
+  if(cncEl) localStorage.setItem('dxf_cnc_hora',cncEl.value);
+  if(cncIndEl) localStorage.setItem('dxf_cnc_ind',cncIndEl.value);
   scheduleSyncSupa();
 }
 
@@ -2175,7 +2663,8 @@ function verPresupuestoHistorial(idx){
     num:h.num, fecha:h.fecha, cli:h.cli, cll:s.cll,
     lineasCalc:s.lineasCalc.map(function(lc){
       return {l:{cant:lc.cant||1, desc:lc.desc||''}, desc:lc.desc||'',
-              matLabel:lc.matLabel||'—', ops:lc.ops||[], res:lc.res||{}};
+              matLabel:lc.matLabel||'—', techLabel:lc.techLabel||'', tipo:lc.tipo||'mecanizado',
+              ops:lc.ops||[], res:lc.res||{}};
     }),
     plazo:s.plazo, validez:s.validez, ant:s.ant,
     notas:s.notas, urg:s.urg, fh:s.fh,
