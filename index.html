@@ -464,6 +464,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-siz
 </div>
 
 <div id="tab-trabajo" class="panel">
+  <div id="edicion_banner" style="display:none;background:#E6F1FB;border:1px solid #185FA5;border-radius:9px;padding:10px 14px;margin-bottom:10px;font-size:12px;color:#0C447C;justify-content:space-between;align-items:center">
+    <span>✏️ Editando presupuesto <strong id="edicion_num"></strong> — Los cambios sobreescribirán el original</span>
+    <button class="btn sm" onclick="cancelarEdicion()" style="margin-left:10px;flex-shrink:0">Cancelar</button>
+  </div>
   <div class="card">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
       <div class="card-title" style="margin-bottom:0">Lineas de trabajo</div>
@@ -576,6 +580,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-siz
     <div class="pres-actions">
       <button class="btn primary" onclick="abrirPDF()">Guardar PDF</button>
       <button class="btn" style="background:#25D366;color:#fff;border-color:#25D366" onclick="compartirWhatsApp()">WhatsApp</button>
+      <button class="btn" onclick="editarDesdeVista()" style="background:#E6F1FB;color:#0C447C;border-color:#185FA5" id="btn_editar_pres">✏️ Editar</button>
       <button class="btn" onclick="switchTab('resultado')">Volver</button>
     </div>
     <div class="pres-doc" id="pres_render"></div>
@@ -1296,6 +1301,7 @@ function aplicarEmpresaAlForm(){
 var OPS=['setup','cilin','rosca','talad','pieza','acab'];
 var FIJOS=139,HORAS_BASE=80,IVA=0.21;
 var historial=[],numP=1;
+var _editandoPresIdx=-1, _editandoPresNum='', _editandoPresFecha='';
 var LOGO=document.getElementById('toplogo').src;
 var empresa={nombre:'DXFMotorsport',nif:'',web:'dxfmotorsport.com',tel:'',email:'',loc:'Naron, Galicia',dir:'',legal:'',logo:'',color:'#111111',eslogan:'',prefijo:'DXF'};
 function getEmpLogo(){return empresa.logo||LOGO;}
@@ -1615,8 +1621,9 @@ function guardarYGenerar(){
   if(isNaN(ant)||antEl.value==='') ant=50;
   var antFinal=Number(ant);
   var _pref=(empresa.prefijo||empresa.nombre||'DXF').trim().toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,6)||'DXF';
-  var num=_pref+'-'+(numP<10?'00':numP<100?'0':'')+numP;
-  var fecha=new Date().toLocaleDateString('es-ES',{day:'numeric',month:'long',year:'numeric'});
+  var _esEdicion = _editandoPresIdx >= 0;
+  var num = _esEdicion ? _editandoPresNum : (_pref+'-'+(numP<10?'00':numP<100?'0':'')+numP);
+  var fecha = _esEdicion ? _editandoPresFecha : new Date().toLocaleDateString('es-ES',{day:'numeric',month:'long',year:'numeric'});
   var urg=rch('urgente'), fh=rch('fueraho');
 
   // Calculate totals from all lineas
@@ -1669,10 +1676,13 @@ function guardarYGenerar(){
 
   // Save to historial
   var desc = lineas.length===1 ? (lineas[0].desc||'Sin descripcion') : lineas.length+' piezas';
-  historial.unshift({
+  var _savedHistIdx = _esEdicion ? _editandoPresIdx : 0;
+  var _newEntry = {
     num:num, fecha:fecha, desc:desc+extras, mat:'—', cant:lineas.length,
     total:totalIva.toFixed(2), cli:cli, urg:urg, fh:fh, serie:false,
     snap:{
+      lineasRaw: JSON.parse(JSON.stringify(lineas)),
+      cliNombre: cli, cliContacto: clc, cliNif: cln, cliDir: cld, cliVehiculo: clv,
       lineasCalc:lineasCalc.map(function(lc){
         return {desc:lc.l.desc, matLabel:lc.matLabel, techLabel:lc.techLabel||'', tipo:lc.tipo||'mecanizado',
                 cant:lc.l.cant,
@@ -1688,8 +1698,17 @@ function guardarYGenerar(){
       empSub:getEmpSub(), empSubText:getEmpSubText(), empNif:empresa.nif, empDir:empresa.dir,
       empLegal:empresa.legal, empEslogan:getEmpEslogan()
     }
-  });
-  numP++;
+  };
+  if(_esEdicion){
+    historial[_editandoPresIdx] = _newEntry;
+  } else {
+    historial.unshift(_newEntry);
+    numP++;
+  }
+  // Resetear modo edición y ocultar banner
+  _editandoPresIdx = -1; _editandoPresNum = ''; _editandoPresFecha = '';
+  var _eb = document.getElementById('edicion_banner');
+  if(_eb) _eb.style.display = 'none';
   try {
     localStorage.setItem('dxf_historial', JSON.stringify(historial.slice(0,50)));
     localStorage.setItem('dxf_nump', numP);
@@ -1701,7 +1720,7 @@ function guardarYGenerar(){
     lineasCalc:lineasCalc, plazo:plazo, validez:validez,
     ant:antFinal, notas:notas, urg:urg, fh:fh,
     totalBase:totalBase, totalIva:totalIva,
-    _snapEmp:null
+    _snapEmp:null, _histIdx:_savedHistIdx
   };
   document.getElementById('pres_render').innerHTML=buildPres();
   document.getElementById('pres_empty').style.display='none';
@@ -1827,7 +1846,7 @@ function renderHist(){
     // Detect CNC/3D from snap if flags not stored
     var hasCnc = h.cnc || (h.snap&&h.snap.lineasCalc&&h.snap.lineasCalc.some(function(lc){return lc.tipo==='fresadora';}));
     var has3d  = h.imp3d || (h.snap&&h.snap.lineasCalc&&h.snap.lineasCalc.some(function(lc){return lc.tipo==='impresion3d';}));
-    var hBtn=h.snap&&h.snap.lineasCalc?'<button class="btn sm" onclick="verPresupuestoHistorial('+i+')" style="flex-shrink:0;padding:5px 10px">Ver</button>':'';
+    var hBtn=h.snap&&h.snap.lineasCalc?'<button class="btn sm" onclick="verPresupuestoHistorial('+i+')" style="flex-shrink:0;padding:5px 10px">Ver</button>'+(h.snap.lineasRaw?'<button class="btn sm" onclick="editarPresupuesto('+i+')" style="flex-shrink:0;padding:5px 10px;background:#EAF3DE;color:#27500A;border-color:#27500A;margin-left:4px">Editar</button>':''):'';
     html+='<div class="hist-item"><span class="hist-num">'+h.num+'</span><div class="hist-desc"><div class="hd">'+h.desc
       +(h.urg?'<span class="hbadge urg">urgente</span>':'')
       +(h.fh?'<span class="hbadge fh">fuera horario</span>':'')
@@ -1849,6 +1868,79 @@ function limpiarHist(){
   } catch(e) {}
   renderHist();
   subirDatosLocales(); // sync inmediato al borrar historial
+}
+
+function editarPresupuesto(idx){
+  var h = historial[idx];
+  if(!h || !h.snap){ alert('Este presupuesto no se puede editar.'); return; }
+  var s = h.snap;
+  if(!s.lineasRaw || !s.lineasRaw.length){
+    alert('Este presupuesto fue guardado con una version anterior y no puede editarse directamente.\nGenera un nuevo presupuesto y copialo manualmente.');
+    return;
+  }
+  // Restaurar lineas con deep copy
+  lineas = [];
+  lineaId = 0;
+  s.lineasRaw.forEach(function(rawL){
+    lineaId++;
+    var l = JSON.parse(JSON.stringify(rawL));
+    l.id = lineaId;
+    lineas.push(l);
+  });
+  // Restaurar datos del cliente
+  document.getElementById('cli_nombre').value = s.cliNombre || (s.cll&&s.cll[0]) || h.cli || '';
+  document.getElementById('cli_contacto').value = s.cliContacto || '';
+  document.getElementById('cli_nif').value = s.cliNif || '';
+  document.getElementById('cli_dir').value = s.cliDir || '';
+  document.getElementById('cli_vehiculo').value = s.cliVehiculo || '';
+  // Restaurar condiciones
+  document.getElementById('plazo').value = s.plazo || '';
+  document.getElementById('validez').value = s.validez !== undefined ? s.validez : 30;
+  document.getElementById('anticipo').value = s.ant !== undefined ? s.ant : 50;
+  document.getElementById('notas').value = s.notas || '';
+  // Restaurar recargos
+  var urgEl = document.getElementById('rec_urgente');
+  var fhEl  = document.getElementById('rec_fueraho');
+  if(urgEl) urgEl.checked = !!s.urg;
+  if(fhEl)  fhEl.checked  = !!s.fh;
+  var cu = document.getElementById('card_urg'); if(cu) cu.className = 'rc-card'+(s.urg?' act-urg':'');
+  var cf = document.getElementById('card_fh');  if(cf) cf.className = 'rc-card'+(s.fh?' act-fh':'');
+  // Activar modo edicion
+  _editandoPresIdx = idx;
+  _editandoPresNum = h.num;
+  _editandoPresFecha = h.fecha;
+  // Mostrar banner
+  var eb = document.getElementById('edicion_banner');
+  var en = document.getElementById('edicion_num');
+  if(eb){ eb.style.display = 'flex'; }
+  if(en){ en.textContent = h.num; }
+  // Cerrar modal si esta abierto
+  try{ cerrarModal(); }catch(e){}
+  // Toast informativo
+  var t=document.createElement('div');
+  t.textContent='✏️ Cargado para editar: '+h.num;
+  t.style.cssText='position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#185FA5;color:#fff;padding:10px 20px;border-radius:8px;font-size:13px;font-weight:600;z-index:99999;box-shadow:0 2px 8px rgba(0,0,0,.2)';
+  document.body.appendChild(t);
+  setTimeout(function(){if(t.parentNode)t.parentNode.removeChild(t);},2500);
+  // Navegar a trabajo
+  renderLineas();
+  calc();
+  switchTab('trabajo');
+}
+
+function cancelarEdicion(){
+  if(!confirm('Cancelar la edicion? Los cambios no guardados se perderan.')) return;
+  _editandoPresIdx = -1; _editandoPresNum = ''; _editandoPresFecha = '';
+  var eb = document.getElementById('edicion_banner');
+  if(eb) eb.style.display = 'none';
+}
+
+function editarDesdeVista(){
+  if(!window._pres || window._pres._histIdx === undefined || window._pres._histIdx < 0){
+    alert('No se puede editar este presupuesto. Accede desde el Historial o la ficha del cliente.');
+    return;
+  }
+  editarPresupuesto(window._pres._histIdx);
 }
 
 // SISTEMA DE LINEAS MULTIPLES
@@ -2641,6 +2733,7 @@ function abrirModal(idx){
             +'<div style="display:flex;align-items:center;gap:8px;flex-shrink:0">'
             +'<div style="font-weight:700;color:#1a1a1a">'+h.total+' €</div>'
             +'<button class="btn sm" onclick="verPresupuestoHistorial('+hidx+')" style="background:#185FA5;color:#fff;border-color:#185FA5;padding:4px 10px">Ver</button>'
+            +(h.snap&&h.snap.lineasRaw?'<button class="btn sm" onclick="editarPresupuesto('+hidx+')" style="background:#EAF3DE;color:#27500A;border-color:#27500A;padding:4px 10px">Editar</button>':'')
             +'</div>'
             +'</div>';
         }).join('');
@@ -2669,6 +2762,7 @@ function verPresupuestoHistorial(idx){
     plazo:s.plazo, validez:s.validez, ant:s.ant,
     notas:s.notas, urg:s.urg, fh:s.fh,
     totalBase:s.totalBase, totalIva:s.totalIva,
+    _histIdx: idx,
     _snapEmp:{color:s.empColor||'', nombre:s.empNombre||'', logo:s.empLogo||'',
               sub:s.empSub||'', subText:s.empSubText||'', nif:s.empNif||'',
               dir:s.empDir||'', legal:s.empLegal||'', eslogan:s.empEslogan||''}
