@@ -1870,23 +1870,116 @@ function limpiarHist(){
   subirDatosLocales(); // sync inmediato al borrar historial
 }
 
+function reconstruirLineasDesdeCalc(lineasCalc){
+  // Construir mapas inversos label→id para materiales
+  var matMap = {};
+  MAT_OPTIONS.forEach(function(m){ matMap[m[1]] = m[0]; });
+  var mat3dMap = {};
+  MAT_3D.forEach(function(m){ mat3dMap[m.label] = m.id; });
+  var matCncMap = {};
+  MAT_CNC.forEach(function(m){ matCncMap[m.label] = m.id; });
+
+  return lineasCalc.map(function(lc){
+    var tipo = lc.tipo || 'mecanizado';
+    var cant = lc.cant || 1;
+    var desc = lc.desc || '';
+    var ops  = Array.isArray(lc.ops) ? lc.ops : [];
+
+    // Linea base con todos los defaults
+    var l = {
+      tipo:tipo, desc:desc, cant:cant,
+      mat:'acero_f114', mat_coste:0, mat_desp:20,
+      ops:{setup:false,cilin:false,rosca:false,talad:false,pieza:false,acab:false},
+      times:{setup:10,cilin:25,rosca:20,talad:15,pieza:45,acab:15},
+      imp_tech:'fdm', imp_tiempo_h:0, imp_tiempo_m:30, imp_peso_g:50,
+      imp_mat3d:'pla', imp_mat_coste_kg:22, imp_maq_hora:3, imp_postproceso:30, imp_desp:15,
+      cnc_tipo:'router', cnc_mat:'mdf_cnc', cnc_mat_coste:0, cnc_mat_desp:15, cnc_maq_hora:3,
+      cnc_ops:{prep_cnc:false,desbaste:false,contorno:false,grabado:false,talad_cnc:false,acab_cnc:false},
+      cnc_times:{prep_cnc:15,desbaste:30,contorno:20,grabado:25,talad_cnc:10,acab_cnc:15}
+    };
+
+    if(tipo === 'mecanizado'){
+      var mid = matMap[lc.matLabel||''];
+      if(mid) l.mat = mid;
+      // Parsear operaciones desde "- Label (X min)"
+      ops.forEach(function(opStr){
+        var tm = opStr.match(/\((\d+)\s*min\)/);
+        var time = tm ? parseInt(tm[1]) : 0;
+        OPS_DEF.forEach(function(op){
+          if(opStr.indexOf(op.label) !== -1){
+            l.ops[op.id] = true;
+            if(time) l.times[op.id] = time;
+          }
+        });
+      });
+
+    } else if(tipo === 'impresion3d'){
+      var m3id = mat3dMap[lc.matLabel||''];
+      if(m3id) l.imp_mat3d = m3id;
+      var techMap3d = {'FDM':'fdm','Resina':'resin','SLS':'sls'};
+      if(lc.techLabel && techMap3d[lc.techLabel]) l.imp_tech = techMap3d[lc.techLabel];
+      ops.forEach(function(opStr){
+        var mT = opStr.match(/Tiempo[^:]*:\s*(\d+)\s*min/i);
+        var mP = opStr.match(/Peso[^:]*:\s*(\d+(?:\.\d+)?)\s*g/i);
+        var mPp= opStr.match(/Postproceso[^:]*:\s*(\d+)\s*min/i);
+        if(mT){ var mins=parseInt(mT[1]); l.imp_tiempo_h=Math.floor(mins/60); l.imp_tiempo_m=mins%60; }
+        if(mP)  l.imp_peso_g = parseFloat(mP[1]);
+        if(mPp) l.imp_postproceso = parseInt(mPp[1]);
+      });
+      // Recuperar coste/kg del catálogo si se reconoció el material
+      var m3d = MAT_3D.find(function(m){ return m.id === l.imp_mat3d; });
+      if(m3d) l.imp_mat_coste_kg = m3d.coste_kg;
+
+    } else if(tipo === 'fresadora'){
+      var mcid = matCncMap[lc.matLabel||''];
+      if(mcid) l.cnc_mat = mcid;
+      if(lc.techLabel && lc.techLabel.indexOf('Industrial') !== -1) l.cnc_tipo = 'industrial';
+      ops.forEach(function(opStr){
+        var tm = opStr.match(/\((\d+)\s*min\)/);
+        var time = tm ? parseInt(tm[1]) : 0;
+        OPS_CNC.forEach(function(op){
+          if(opStr.indexOf(op.label) !== -1){
+            l.cnc_ops[op.id] = true;
+            if(time) l.cnc_times[op.id] = time;
+          }
+        });
+      });
+    }
+    return l;
+  });
+}
+
 function editarPresupuesto(idx){
   var h = historial[idx];
   if(!h || !h.snap){ alert('Este presupuesto no se puede editar.'); return; }
   var s = h.snap;
-  if(!s.lineasRaw || !s.lineasRaw.length){
-    alert('Este presupuesto fue guardado con una version anterior y no puede editarse directamente.\nGenera un nuevo presupuesto y copialo manualmente.');
-    return;
-  }
-  // Restaurar lineas con deep copy
   lineas = [];
   lineaId = 0;
-  s.lineasRaw.forEach(function(rawL){
-    lineaId++;
-    var l = JSON.parse(JSON.stringify(rawL));
-    l.id = lineaId;
-    lineas.push(l);
-  });
+
+  if(s.lineasRaw && s.lineasRaw.length){
+    // Formato nuevo: restauración completa
+    s.lineasRaw.forEach(function(rawL){
+      lineaId++;
+      var l = JSON.parse(JSON.stringify(rawL));
+      l.id = lineaId;
+      lineas.push(l);
+    });
+  } else if(s.lineasCalc && s.lineasCalc.length){
+    // Formato antiguo: restauración parcial desde lineasCalc
+    if(!confirm(
+      'Este presupuesto se guardo con una version anterior.\n\n' +
+      'Se restauraran las operaciones y tiempos, pero los costes de material quedaran a 0 y deberas revisarlos antes de guardar.\n\n' +
+      '¿Continuar?'
+    )) return;
+    reconstruirLineasDesdeCalc(s.lineasCalc).forEach(function(l){
+      lineaId++;
+      l.id = lineaId;
+      lineas.push(l);
+    });
+  } else {
+    alert('Este presupuesto no contiene datos suficientes para restaurarse.');
+    return;
+  }
   // Restaurar datos del cliente
   document.getElementById('cli_nombre').value = s.cliNombre || (s.cll&&s.cll[0]) || h.cli || '';
   document.getElementById('cli_contacto').value = s.cliContacto || '';
